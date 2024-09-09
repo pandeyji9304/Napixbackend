@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Logistics Head</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        #routeUpdates {
+            margin-top: 20px;
+        }
+        #routeUpdates p {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Logistics Head</h1>
+    <div>
+        <h2>Connected Trucks</h2>
+        <ul id="truckList"></ul>
+    </div>
+    <div>
+        <input type="text" id="selectedTruck" placeholder="Enter Truck Number to View Messages" />
+        <button id="getMessagesButton">Get Messages</button>
+    </div>
+    <div id="routeUpdates"></div>
+    
+    <script>
+        const socket = io('http://localhost:5001');
+
+        // Handle truck connection updates
+        socket.on('truckConnected', ({ truckNumber }) => {
+            const truckList = document.getElementById('truckList');
+            const listItem = document.createElement('li');
+            listItem.textContent = truckNumber;
+            listItem.dataset.truckNumber = truckNumber;
+            listItem.addEventListener('click', () => {
+                document.getElementById('selectedTruck').value = truckNumber;
+                // Fetch messages for this truck
+                socket.emit('getTruckMessages', truckNumber);
+            });
+            truckList.appendChild(listItem);
+        });
+
+        // Handle receiving messages from the server
+        socket.on('driverData', ({ truckNumber, message }) => {
+            const routeUpdatesDiv = document.getElementById('routeUpdates');
+            routeUpdatesDiv.innerHTML += `<p>Data received from truck ${truckNumber}: ${message}</p>`;
+        });
+
+        // Handle truck messages response
+        socket.on('truckMessages', ({ truckNumber, messages }) => {
+            const routeUpdatesDiv = document.getElementById('routeUpdates');
+            routeUpdatesDiv.innerHTML = `<h3>Messages for truck ${truckNumber}</h3>`;
+            messages.forEach(msg => {
+                routeUpdatesDiv.innerHTML += `<p>${msg}</p>`;
+            });
+        });
+
+        // Fetch messages for the selected truck when button is clicked
+        document.getElementById('getMessagesButton').addEventListener('click', () => {
+            const truckNumber = document.getElementById('selectedTruck').value;
+            socket.emit('getTruckMessages', truckNumber);
+        });
+    </script>
+</body>
+</html>
