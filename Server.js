@@ -17,7 +17,7 @@ const server = http.createServer(app);
 // Configure Socket.IO with CORS
 const io = socketIo(server, {
     cors: {
-        origin: 'http://127.0.0.1:5501', // Ensure this matches the client origin exactly
+        origin: 'https://napixbackend-2.onrender.com', // Ensure this matches the client origin exactly
         methods: ['GET', 'POST'],
         allowedHeaders: ['Content-Type'],
     }
@@ -27,7 +27,7 @@ connectDB();
 
 // Configure CORS for Express
 app.use(cors({
-    origin: 'http://127.0.0.1:5501', // Ensure this matches the client origin exactly
+    origin: 'https://napixbackend-2.onrender.com', // Ensure this matches the client origin exactly
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
 }));
