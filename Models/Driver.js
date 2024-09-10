@@ -7,5 +7,4 @@ const DriverSchema = new mongoose.Schema({
     password: String,
     companyId: mongoose.Schema.Types.ObjectId,
 });
-
 module.exports = mongoose.model('Driver', DriverSchema);
