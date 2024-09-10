@@ -8,6 +8,7 @@ const router = express.Router();
 
 // Sign Up
 router.post('/signup', async (req, res) => {
+    console.log('Signup route hit');
     const { name, email, phoneNumber, password, companyName } = req.body;
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
