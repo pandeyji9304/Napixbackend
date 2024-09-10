@@ -29,7 +29,7 @@
     <div id="routeUpdates"></div>
     
     <script>
-        const socket = io('http://localhost:5001');
+        const socket = io('https://napixbackend-2.onrender.com');
 
         // Handle truck connection updates
         socket.on('truckConnected', ({ truckNumber }) => {

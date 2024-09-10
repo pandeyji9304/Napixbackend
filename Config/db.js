@@ -29,4 +29,6 @@ const connectDB = () => {
 
 module.exports = connectDB;
 
+//https://napixbackend-2.onrender.com/api/users/signup
+
 
