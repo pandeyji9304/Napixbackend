@@ -1,69 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Logistics Head</title>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-    <style>
-        #routeUpdates {
-            margin-top: 20px;
-        }
-        #routeUpdates p {
-            background-color: #f4f4f4;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-    </style>
+    <title>Socket.IO Test</title>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <h1>Logistics Head</h1>
-    <div>
-        <h2>Connected Trucks</h2>
-        <ul id="truckList"></ul>
-    </div>
-    <div>
-        <input type="text" id="selectedTruck" placeholder="Enter Truck Number to View Messages" />
-        <button id="getMessagesButton">Get Messages</button>
-    </div>
-    <div id="routeUpdates"></div>
-    
+    <h1>Socket.IO Test</h1>
     <script>
-        const socket = io('https://napixbackend-2.onrender.com');
-
-        // Handle truck connection updates
-        socket.on('truckConnected', ({ truckNumber }) => {
-            const truckList = document.getElementById('truckList');
-            const listItem = document.createElement('li');
-            listItem.textContent = truckNumber;
-            listItem.dataset.truckNumber = truckNumber;
-            listItem.addEventListener('click', () => {
-                document.getElementById('selectedTruck').value = truckNumber;
-                // Fetch messages for this truck
-                socket.emit('getTruckMessages', truckNumber);
-            });
-            truckList.appendChild(listItem);
+        // Replace 'your_token_here' with the actual JWT token
+        const socket = io({
+            auth: {
+                token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NmUxY2RmMzRjOTlhZTViMDA5MDQ1MmEiLCJyb2xlIjoibG9naXN0aWNzX2hlYWQiLCJpYXQiOjE3MjYwNzQzOTksImV4cCI6MTcyNjA3Nzk5OX0.NflCcDm6EeupqDtEdzPRZ8PDoeHUmugK6GNxY0D5ZJQ'
+            }
         });
 
-        // Handle receiving messages from the server
-        socket.on('driverData', ({ truckNumber, message }) => {
-            const routeUpdatesDiv = document.getElementById('routeUpdates');
-            routeUpdatesDiv.innerHTML += `<p>Data received from truck ${truckNumber}: ${message}</p>`;
+        // Join a specific room
+        socket.emit('joinRoom', 'someVehicleNumber');
+
+        // Listen for routeCreated events
+        socket.on('routeCreated', (data) => {
+            console.log('Route created:', data);
         });
 
-        // Handle truck messages response
-        socket.on('truckMessages', ({ truckNumber, messages }) => {
-            const routeUpdatesDiv = document.getElementById('routeUpdates');
-            routeUpdatesDiv.innerHTML = `<h3>Messages for truck ${truckNumber}</h3>`;
-            messages.forEach(msg => {
-                routeUpdatesDiv.innerHTML += `<p>${msg}</p>`;
-            });
-        });
-
-        // Fetch messages for the selected truck when button is clicked
-        document.getElementById('getMessagesButton').addEventListener('click', () => {
-            const truckNumber = document.getElementById('selectedTruck').value;
-            socket.emit('getTruckMessages', truckNumber);
+        socket.on('error', (message) => {
+            console.error('Socket error:', message);
         });
     </script>
 </body>

@@ -5,6 +5,7 @@ const DriverSchema = new mongoose.Schema({
     mobileNumber: String,
     email: { type: String, unique: true },
     password: String,
-    companyId: mongoose.Schema.Types.ObjectId,
+    assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'LogisticsHead' },
+    passwordResetRequired: { type: Boolean, default: true }
 });
 module.exports = mongoose.model('Driver', DriverSchema);

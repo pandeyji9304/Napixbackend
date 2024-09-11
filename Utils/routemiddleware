@@ -1,0 +1,26 @@
+// const jwt = require('jsonwebtoken');
+// const User = require('../Models/User'); // Assuming you have a User model
+
+// const authenticateLogisticsHead = async (req, res, next) => {
+//     const token = req.headers.authorization?.split(' ')[1]; // Bearer token
+
+//     if (!token) return res.status(401).json({ error: 'No token provided' });
+
+//     try {
+//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//         const user = await User.findById(decoded.id);
+
+//         if (!user) return res.status(404).json({ error: 'User not found' });
+
+//         if (user.role !== 'LogisticsHead') {
+//             return res.status(403).json({ error: 'Access denied' });
+//         }
+
+//         req.user = user; // Add user information to request
+//         next(); // Allow access to the route
+//     } catch (err) {
+//         res.status(401).json({ error: 'Invalid token' });
+//     }
+// };
+
+// module.exports = authenticateLogisticsHead;
