@@ -1,23 +1,3 @@
-// const mongoose = require('mongoose');
-
-// const connectDB = async () => {
-//     try {
-//         await mongoose.connect('mongodb://localhost:27017/napix', {
-//             useNewUrlParser: true,
-//             useUnifiedTopology: true,
-//         });
-//         console.log('MongoDB connected');
-//     } catch (err) {
-//         console.error(err.message);
-//         process.exit(1);
-//     }
-// };
-
-// module.exports = connectDB;
-
-
-// Load environment variables from .env file
-// ./Config/db.js
 const mongoose = require('mongoose');
 require('dotenv').config(); // Load environment variables
 
