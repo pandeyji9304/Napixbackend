@@ -1,17 +1,19 @@
+require('dotenv').config();
 const nodemailer = require('nodemailer');
 
-
+// Create a transporter using environment variables for sensitive data
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'famousedit9304@gmail.com',
-        pass: 'your-email-password',
+        user: process.env.EMAIL_USER,  // Get email from environment variable
+        pass: process.env.EMAIL_PASS,  // Get password from environment variable
     },
 });
 
+// Function to send email
 const sendEmail = (to, subject, text) => {
     const mailOptions = {
-        from: 'famousedit9304@gmail.com',
+        from: process.env.EMAIL_USER,  // Use the email from environment variable
         to,
         subject,
         text,

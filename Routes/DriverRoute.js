@@ -24,6 +24,7 @@ router.post('/add-driver', authenticateLogisticsHead, async (req, res) => {
             email,
             password: hashedPassword,
             assignedBy: req.user._id
+            
         });
 
         // Save the driver to the database
