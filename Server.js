@@ -95,24 +95,19 @@ app.use('/api/routes', routeRoutes);
 app.use('/api/auth', authRoutes);
 
 // Store connected trucks (rooms)
-let connectedTrucks = [23454];
+let connectedTrucks = [];
 
 io.on('connection', (socket) => {
     console.log('New client connected');
 
-    // Handler for logistics head to see connected trucks
-    socket.on('getConnectedTrucks', async () => {
+    // Handler for logistics head to see live connected trucks
+    socket.on('getConnectedTrucks', () => {
         if (socket.user.role !== 'logistics_head') {
             socket.emit('message', 'Unauthorized access');
             return;
         }
-        // Fetch all assigned trucks
-        const assignedTrucks = await AssignedTrucks.findOne();
-        if (assignedTrucks) {
-            socket.emit('connectedTrucks', assignedTrucks.assignedTrucks);
-        } else {
-            socket.emit('connectedTrucks', []);
-        }
+        // Send the list of currently connected trucks
+        socket.emit('connectedTrucks', connectedTrucks);
     });
 
     socket.on('joinRoom', async (vehicleNumber) => {
@@ -129,6 +124,7 @@ io.on('connection', (socket) => {
 
                 // Join the room if the truck is assigned to the driver
                 socket.join(vehicleNumber);
+                console.log(`Vehicle ${vehicleNumber} connected.`);
                 connectedTrucks.push(vehicleNumber);
                 socket.emit('message', `Successfully joined the room for vehicle: ${vehicleNumber}`);
 
@@ -149,7 +145,7 @@ io.on('connection', (socket) => {
         if (socket.rooms.has(vehicleNumber)) {
             // Save the message to the database
             await Message.create({ truckNumber: vehicleNumber, message });
-
+            console.log(`Message sent to vehicle ${vehicleNumber}: ${message}`);
             // Broadcast the message to the room
             io.to(vehicleNumber).emit('message', message);
         } else {
