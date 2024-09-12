@@ -26,6 +26,11 @@ app.use(cors({ origin: 'http://127.0.0.1:5501', methods: ['GET', 'POST'], allowe
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+//test api
+app.get('/', (req, res) => {
+    res.send('Hello, Pandeyjii!');
+});
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/drivers', driverRoutes);
