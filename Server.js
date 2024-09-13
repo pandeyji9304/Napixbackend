@@ -22,7 +22,7 @@ const io = socketIo(server);
 connectDB();
 
 // Middleware
-app.use(cors({ origin: 'http://127.0.0.1:5501', methods: ['GET', 'POST'], allowedHeaders: ['Content-Type', 'Authorization'] }));
+app.use(cors({ origin: 'http://localhost:5501', methods: ['GET', 'POST'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
