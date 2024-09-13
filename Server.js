@@ -16,19 +16,31 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+// Socket.IO configuration with CORS support
+const io = socketIo(server, {
+    cors: {
+      origin: ['http://localhost:5501', 'https://napixbackend-2.onrender.com'],
+      methods: ['GET', 'POST'],
+      allowedHeaders: ['Content-Type', 'Authorization']
+    }
+  });
 
 // Connect to the database
 connectDB();
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:5501', methods: ['GET', 'POST'], allowedHeaders: ['Content-Type', 'Authorization'] }));
+app.use(cors({
+  origin: ['http://localhost:5501', 'https://napixbackend-2.onrender.com'],
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-//test api
+// Test API
 app.get('/', (req, res) => {
-    res.send('Hello, Pandeyjii!');
+  res.send('Hello, Pandeyjii!');
 });
 
 // Routes
@@ -50,5 +62,5 @@ global.connectedTrucks = [];
 io.use(socketEvents.authenticate);
 io.on('connection', socketEvents.handleConnection(io));
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5001; // Use default port 5001 if not specified
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

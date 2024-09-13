@@ -39,11 +39,14 @@
     </div>
 
     <script>
+        // Determine base URL based on environment
+        const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'https://napixbackend-2.onrender.com';
+
         // Predefined token (replace this with your actual token)
-        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NmUxY2RmMzRjOTlhZTViMDA5MDQ1MmEiLCJyb2xlIjoibG9naXN0aWNzX2hlYWQiLCJpYXQiOjE3MjYxNTA2Mjd9.8Ub0n7uHwG5_Yboouriu0GeHjKp6kgvSd0ueaT4G6SY';
+        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NmUxY2RmMzRjOTlhZTViMDA5MDQ1MmEiLCJyb2xlIjoibG9naXN0aWNzX2hlYWQiLCJpYXQiOjE3MjYyMzQzNjN9.9tnJ2gMnMsDf6zXzSfGjzK2VfKp-FraTaUf920yiBrU';
 
         // Initialize socket connection with the token
-        const socket = io('http://localhost:5001', {
+        const socket = io(baseURL, {
             auth: {
                 token
             }
@@ -98,13 +101,11 @@
             socket.emit('getConnectedTrucks');
         });
 
-         // Fetch messages for a specific truck
-         function fetchMessages(truckNumber) {
+        // Fetch messages for a specific truck
+        function fetchMessages(truckNumber) {
             socket.emit('getMessages', truckNumber);
         }
 
     </script>
 </body>
 </html>
-
-
