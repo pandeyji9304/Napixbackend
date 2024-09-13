@@ -11,8 +11,11 @@ const RouteSchema = new mongoose.Schema({
             required: true,
         },
     },
+    status: {
+        type: String,
+        default: 'scheduled', // Default status when the route is created
+        enum: ['scheduled', 'driving safely', 'active alerts', 'completed'], // Enum for possible statuses
+    },
 });
-
-
 
 module.exports = mongoose.model('Route', RouteSchema);

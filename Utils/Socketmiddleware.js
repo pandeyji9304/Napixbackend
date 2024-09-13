@@ -36,6 +36,9 @@ const handleConnection = (io) => (socket) => {
                     return;
                 }
                 socket.join(vehicleNumber);
+
+                await Route.updateOne({ vehicleNumber }, { status: 'driving safely' });
+
                 global.connectedTrucks.push(vehicleNumber);
                 socket.emit('message', `Successfully joined the room for vehicle: ${vehicleNumber}`);
             } else if (socket.user.role === 'logistics_head') {
@@ -52,6 +55,13 @@ const handleConnection = (io) => (socket) => {
     socket.on('sendMessage', async (vehicleNumber, message) => {
         if (socket.rooms.has(vehicleNumber)) {
             await Message.create({ truckNumber: vehicleNumber, message });
+
+            // Update route status to "active alerts"
+        await Route.findOneAndUpdate(
+            { vehicleNumber },
+            { status: 'active alerts' },
+            { new: true }
+        );
             io.to(vehicleNumber).emit('message', message);
         } else {
             socket.emit('message', 'You are not allowed to send messages from this room.');
@@ -87,6 +97,7 @@ const handleConnection = (io) => (socket) => {
                 if (routeResult.deletedCount === 0) {
                     console.log(`No routes found for vehicle ${vehicleNumber}.`);
                 }
+            
 
                 await session.commitTransaction();
                 session.endSession();
