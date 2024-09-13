@@ -84,10 +84,11 @@
             const list = document.getElementById('truckMessages');
             list.innerHTML = ''; // Clear the current list
             list.style.display = 'block'; // Show the messages section
+            // Prepend messages to ensure latest are at the top
             messages.forEach(msg => {
                 const listItem = document.createElement('li');
                 listItem.textContent = `${msg.timestamp}: ${msg.message}`;
-                list.appendChild(listItem);
+                list.insertBefore(listItem, list.firstChild);
             });
         });
 
@@ -105,7 +106,6 @@
         function fetchMessages(truckNumber) {
             socket.emit('getMessages', truckNumber);
         }
-
     </script>
 </body>
 </html>

@@ -3,6 +3,7 @@ const Message = require('../Models/Messages');
 const AssignedTrucks = require('../Models/AssignedTrucks');
 const Route = require('../Models/Route');
 const { JWT_SECRET } = process.env;
+const mongoose = require("mongoose")
 
 const authenticate = (socket, next) => {
     const token = socket.handshake.auth.token;
@@ -27,9 +28,20 @@ const handleConnection = (io) => (socket) => {
         socket.emit('connectedTrucks', global.connectedTrucks);
     });
 
+
+    // Function to check if a truck is already connected
+function isTruckConnected(vehicleNumber) {
+    return global.connectedTrucks.includes(vehicleNumber);
+}
+
     socket.on('joinRoom', async (vehicleNumber) => {
         try {
             if (socket.user.role === 'driver') {
+                if (isTruckConnected(vehicleNumber)) {
+                    socket.emit('message', 'This truck is already connected.');
+                    return;
+                }
+
                 const assignedTruck = await AssignedTrucks.findOne({ vehicleNumber });
                 if (!assignedTruck) {
                     socket.emit('message', 'You are not assigned to this vehicle. Access denied.');
@@ -52,26 +64,63 @@ const handleConnection = (io) => (socket) => {
         }
     });
 
-    socket.on('sendMessage', async (vehicleNumber, message) => {
-        if (socket.rooms.has(vehicleNumber)) {
-            await Message.create({ truckNumber: vehicleNumber, message });
 
-            // Update route status to "active alerts"
-        await Route.findOneAndUpdate(
-            { vehicleNumber },
-            { status: 'active alerts' },
-            { new: true }
-        );
-            io.to(vehicleNumber).emit('message', message);
-        } else {
-            socket.emit('message', 'You are not allowed to send messages from this room.');
+
+    socket.on('sendMessage', async (vehicleNumber, message) => {
+        try {
+            // Check if the socket is in the room for the specified vehicleNumber
+            if (socket.rooms.has(vehicleNumber)) {
+                // Find the document for the vehicleNumber and update the messages array
+                await Message.findOneAndUpdate(
+                    { truckNumber: vehicleNumber },
+                    {
+                        $push: {
+                            messages: {
+                                message,
+                                timestamp: new Date()
+                            }
+                        }
+                    },
+                    { upsert: true, new: true }
+                );
+    
+                // Update the route status to "active alerts"
+                await Route.findOneAndUpdate(
+                    { vehicleNumber },
+                    { status: 'active alerts' },
+                    { new: true }
+                );
+    
+                // Emit the message to the room
+                io.to(vehicleNumber).emit('message', message);
+            } else {
+                // Notify the user that they are not allowed to send messages from this room
+                socket.emit('message', 'You are not allowed to send messages from this room.');
+            }
+        } catch (error) {
+            console.error('Error handling sendMessage:', error);
+            socket.emit('message', 'An error occurred while sending the message.');
         }
     });
 
     socket.on('getMessages', async (vehicleNumber) => {
-        const messages = await Message.find({ truckNumber: vehicleNumber }).sort({ timestamp: 1 });
-        socket.emit('chatMessages', messages);
+        try {
+            // Find the document for the specified vehicleNumber
+            const messageDoc = await Message.findOne({ truckNumber: vehicleNumber });
+    
+            if (messageDoc) {
+                // If messages are found, send them to the client
+                socket.emit('chatMessages', messageDoc.messages);
+            } else {
+                // If no messages are found, send an empty array
+                socket.emit('chatMessages', []);
+            }
+        } catch (error) {
+            console.error('Error retrieving messages:', error);
+            socket.emit('message', 'An error occurred while retrieving messages.');
+        }
     });
+    
 
     socket.on('endRoute', async (vehicleNumber) => {
         try {
@@ -117,7 +166,12 @@ const handleConnection = (io) => (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('Client disconnected');
+        // Remove the truck number from activeTrucks if it exists
+        global.connectedTrucks.forEach(truckNumber => {
+            if (socket.rooms.has(truckNumber)) {
+                removeTruck(truckNumber);
+            }
+        });
     });
 };
 
