@@ -3,7 +3,10 @@ const Message = require('../Models/Messages');
 const AssignedTrucks = require('../Models/AssignedTrucks');
 const Route = require('../Models/Route');
 const { JWT_SECRET } = process.env;
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
+
+// Helper function to check if a truck is already connected
+const isTruckConnected = (vehicleNumber) => global.connectedTrucks.includes(vehicleNumber);
 
 const authenticate = (socket, next) => {
     const token = socket.handshake.auth.token;
@@ -16,6 +19,7 @@ const authenticate = (socket, next) => {
     });
 };
 
+
 const handleConnection = (io) => (socket) => {
     console.log('New client connected');
 
@@ -24,15 +28,8 @@ const handleConnection = (io) => (socket) => {
             socket.emit('message', 'Unauthorized access');
             return;
         }
-        // Send the list of currently connected trucks
         socket.emit('connectedTrucks', global.connectedTrucks);
     });
-
-
-    // Function to check if a truck is already connected
-function isTruckConnected(vehicleNumber) {
-    return global.connectedTrucks.includes(vehicleNumber);
-}
 
     socket.on('joinRoom', async (vehicleNumber) => {
         try {
@@ -48,7 +45,6 @@ function isTruckConnected(vehicleNumber) {
                     return;
                 }
                 socket.join(vehicleNumber);
-
                 await Route.updateOne({ vehicleNumber }, { status: 'driving safely' });
 
                 global.connectedTrucks.push(vehicleNumber);
@@ -64,13 +60,9 @@ function isTruckConnected(vehicleNumber) {
         }
     });
 
-
-
     socket.on('sendMessage', async (vehicleNumber, message) => {
         try {
-            // Check if the socket is in the room for the specified vehicleNumber
             if (socket.rooms.has(vehicleNumber)) {
-                // Find the document for the vehicleNumber and update the messages array
                 await Message.findOneAndUpdate(
                     { truckNumber: vehicleNumber },
                     {
@@ -83,18 +75,23 @@ function isTruckConnected(vehicleNumber) {
                     },
                     { upsert: true, new: true }
                 );
-    
-                // Update the route status to "active alerts"
+
                 await Route.findOneAndUpdate(
                     { vehicleNumber },
                     { status: 'active alerts' },
                     { new: true }
                 );
-    
-                // Emit the message to the room
+
+                // Emit to truck room
                 io.to(vehicleNumber).emit('message', message);
+
+                // Emit to all logistics heads
+                io.sockets.sockets.forEach(client => {
+                    if (client.user && client.user.role === 'logistics_head') {
+                        client.emit('message', `New message for truck ${vehicleNumber}: ${message}`);
+                    }
+                });
             } else {
-                // Notify the user that they are not allowed to send messages from this room
                 socket.emit('message', 'You are not allowed to send messages from this room.');
             }
         } catch (error) {
@@ -105,14 +102,11 @@ function isTruckConnected(vehicleNumber) {
 
     socket.on('getMessages', async (vehicleNumber) => {
         try {
-            // Find the document for the specified vehicleNumber
             const messageDoc = await Message.findOne({ truckNumber: vehicleNumber });
-    
+
             if (messageDoc) {
-                // If messages are found, send them to the client
                 socket.emit('chatMessages', messageDoc.messages);
             } else {
-                // If no messages are found, send an empty array
                 socket.emit('chatMessages', []);
             }
         } catch (error) {
@@ -120,7 +114,6 @@ function isTruckConnected(vehicleNumber) {
             socket.emit('message', 'An error occurred while retrieving messages.');
         }
     });
-    
 
     socket.on('endRoute', async (vehicleNumber) => {
         try {
@@ -142,18 +135,12 @@ function isTruckConnected(vehicleNumber) {
                     return;
                 }
 
-                const routeResult = await Route.deleteMany({ vehicleNumber }).session(session);
-                if (routeResult.deletedCount === 0) {
-                    console.log(`No routes found for vehicle ${vehicleNumber}.`);
-                }
-            
+                await Route.deleteMany({ vehicleNumber }).session(session);
 
                 await session.commitTransaction();
                 session.endSession();
 
-                // Remove vehicleNumber from connectedTrucks
                 global.connectedTrucks = global.connectedTrucks.filter(truck => truck !== vehicleNumber);
-
                 io.to(vehicleNumber).emit('message', `Route has ended. The room has been closed, vehicle ${vehicleNumber} has been removed from the assigned list, and associated routes have been deleted.`);
             } catch (error) {
                 await session.abortTransaction();
@@ -166,12 +153,16 @@ function isTruckConnected(vehicleNumber) {
     });
 
     socket.on('disconnect', () => {
-        // Remove the truck number from activeTrucks if it exists
         global.connectedTrucks.forEach(truckNumber => {
             if (socket.rooms.has(truckNumber)) {
-                removeTruck(truckNumber);
+                global.connectedTrucks = global.connectedTrucks.filter(truck => truck !== truckNumber);
             }
         });
+
+        // Additional cleanup for logistics head clients
+        if (socket.user && socket.user.role === 'logistics_head') {
+            // Handle logistics head disconnection if necessary
+        }
     });
 };
 

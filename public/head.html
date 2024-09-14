@@ -22,9 +22,13 @@
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            cursor: pointer;
         }
         .container {
             margin-bottom: 20px;
+        }
+        .truck-section {
+            display: none;
         }
     </style>
 </head>
@@ -34,76 +38,113 @@
     <ul id="connectedTrucks"></ul>
 
     <div class="truck-section">
-        <h2>Messages for Truck</h2>
+        <h2>Messages for Truck <span id="selectedTruck"></span></h2>
         <ul id="truckMessages"></ul>
     </div>
 
     <script>
-        // Determine base URL based on environment
         const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'https://napixbackend-2.onrender.com';
 
-        // Predefined token (replace this with your actual token)
         const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NmUxY2RmMzRjOTlhZTViMDA5MDQ1MmEiLCJyb2xlIjoibG9naXN0aWNzX2hlYWQiLCJpYXQiOjE3MjYyMzQzNjN9.9tnJ2gMnMsDf6zXzSfGjzK2VfKp-FraTaUf920yiBrU';
 
-        // Initialize socket connection with the token
         const socket = io(baseURL, {
             auth: {
                 token
             }
         });
 
-        // Handle successful connection
+        // Function to save messages to localStorage
+        function saveMessagesToStorage(truck, messages) {
+            localStorage.setItem(truck, JSON.stringify(messages));
+        }
+
+        // Function to load messages from localStorage
+        function loadMessagesFromStorage(truck) {
+            const messages = JSON.parse(localStorage.getItem(truck)) || [];
+            const list = document.getElementById('truckMessages');
+            list.innerHTML = ''; // Clear the message list first
+            messages.forEach(message => {
+                const listItem = document.createElement('li');
+                listItem.textContent = message;
+                list.appendChild(listItem);
+            });
+        }
+
+        // Clear old messages for the selected truck
+
         socket.on('connect', () => {
             console.log('Connected to server');
             document.getElementById('fetchTrucksBtn').disabled = false;
         });
 
-        // Handle disconnection
         socket.on('disconnect', () => {
-            console.log('Disconnected from server');
-            document.getElementById('fetchTrucksBtn').disabled = true;
-        });
+    console.log('Disconnected from server');
+    document.getElementById('fetchTrucksBtn').disabled = true;
 
-        // Handle the connectedTrucks event from the server
+    // Clear messages from localStorage when socket disconnects
+    const selectedTruck = document.getElementById('selectedTruck').textContent;
+    if (selectedTruck) {
+        clearOldMessages(selectedTruck); // Clear stored messages
+    }
+});
+// Function to clear old messages from localStorage
+function clearOldMessages(truck) {
+    localStorage.removeItem(truck);
+}
+
+
         socket.on('connectedTrucks', (trucks) => {
             const list = document.getElementById('connectedTrucks');
-            list.innerHTML = ''; // Clear the current list
+            list.innerHTML = '';
             trucks.forEach(truck => {
                 const listItem = document.createElement('li');
                 listItem.textContent = truck;
-                listItem.dataset.truck = truck; // Store truck number in data attribute
+                listItem.dataset.truck = truck;
                 listItem.addEventListener('click', () => {
                     fetchMessages(truck);
+                    loadMessagesFromStorage(truck);  // Load old messages from storage
                 });
                 list.appendChild(listItem);
             });
         });
 
-        // Handle messages event from the server
-        socket.on('chatMessages', (messages) => {
-            const list = document.getElementById('truckMessages');
-            list.innerHTML = ''; // Clear the current list
-            list.style.display = 'block'; // Show the messages section
-            // Prepend messages to ensure latest are at the top
-            messages.forEach(msg => {
+        socket.on('chatMessages', ({ vehicleNumber, message }) => {
+            const selectedTruck = document.getElementById('selectedTruck').textContent;
+            if (selectedTruck === vehicleNumber) {
+                const list = document.getElementById('truckMessages');
                 const listItem = document.createElement('li');
-                listItem.textContent = `${msg.timestamp}: ${msg.message}`;
-                list.insertBefore(listItem, list.firstChild);
-            });
+                const timestampedMessage = `${new Date().toLocaleString()}: ${message}`;
+                listItem.textContent = timestampedMessage;
+                list.appendChild(listItem);
+
+                // Save new messages to localStorage
+                let messages = JSON.parse(localStorage.getItem(vehicleNumber)) || [];
+                messages.push(timestampedMessage);
+                saveMessagesToStorage(vehicleNumber, messages);
+            }
         });
 
-        // Handle error messages
         socket.on('message', (msg) => {
-            alert(msg);
+            const list = document.getElementById('truckMessages');
+            const listItem = document.createElement('li');
+            const timestampedMessage = `${new Date().toLocaleString()}: ${msg}`;
+            listItem.textContent = timestampedMessage;
+            list.appendChild(listItem);
+
+            // Save new messages to localStorage for the selected truck
+            const selectedTruck = document.getElementById('selectedTruck').textContent;
+            let messages = JSON.parse(localStorage.getItem(selectedTruck)) || [];
+            messages.push(timestampedMessage);
+            saveMessagesToStorage(selectedTruck, messages);
         });
 
-        // Fetch connected trucks when the button is clicked
         document.getElementById('fetchTrucksBtn').addEventListener('click', () => {
             socket.emit('getConnectedTrucks');
         });
 
-        // Fetch messages for a specific truck
         function fetchMessages(truckNumber) {
+            document.getElementById('selectedTruck').textContent = truckNumber;
+            document.querySelector('.truck-section').style.display = 'block';
             socket.emit('getMessages', truckNumber);
         }
     </script>

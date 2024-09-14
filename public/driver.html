@@ -20,17 +20,31 @@
         <h3>Send a message:</h3>
         <input type="text" id="messageInput" placeholder="Type a message">
         <button id="sendMessage">Send Message</button>
+
+        <!-- Message list to display sent/received messages -->
+        <ul id="messageList"></ul>
     </div>
 
     <!-- Button to end route and disconnect -->
     <button id="endSession" style="display:none;">End Route & Disconnect</button>
 
     <script>
-        const socket = io({
+        // Determine base URL based on environment
+        const baseURL = window.location.hostname === 'localhost' ? 'http://localhost:5001' : 'https://napixbackend-2.onrender.com';
+
+        const socket = io(baseURL,{
             auth: {
                 token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NmUyOWQ2Nzg0YTkwODU3NGMzMzNlMDQiLCJyb2xlIjoiZHJpdmVyIiwiaWF0IjoxNzI2MTQ3OTkyfQ.ChUSU1UfY2oXdw1Eh4bvYqfZIl6gj3gZ4TWk1377Udk'
             }
         });
+
+        // Function to append a message to the message list
+        function appendMessage(message, from = 'You') {
+            const messageList = document.getElementById('messageList');
+            const listItem = document.createElement('li');
+            listItem.textContent = `${from}: ${message}`;
+            messageList.appendChild(listItem);
+        }
 
         // Button to join room
         document.getElementById('joinRoom').addEventListener('click', () => {
@@ -63,7 +77,12 @@
             if (message) {
                 // Send the message to the server
                 socket.emit('sendMessage', document.getElementById('vehicleNumber').value, message);
-                console.log(`Message sent: ${message}`);
+
+                // Display the sent message on the page
+                appendMessage(message);
+
+                // Clear the input field after sending the message
+                document.getElementById('messageInput').value = '';
             } else {
                 alert('Please enter a message to send.');
             }
@@ -97,10 +116,11 @@
             console.log('Route created:', data);
         });
 
-        // Listen for incoming driver messages
-        socket.on('message', (message) => {
-            console.log('Message received from server:', message);
-        });
+        // // Listen for incoming driver messages
+        // socket.on('message', (message) => {
+        //     console.log('Message received from server:', message);
+        //     appendMessage(message, 'Server');
+        // });
 
         socket.on('error', (message) => {
             console.error('Socket error:', message);
