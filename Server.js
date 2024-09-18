@@ -51,6 +51,7 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/routes', routeRoutes);
 app.use('/api/auth', authRoutes);
 
+
 // Serve static files
 app.get('/head', (req, res) => res.sendFile(path.join(__dirname, 'public', 'head.html')));
 app.get('/driver', (req, res) => res.sendFile(path.join(__dirname, 'public', 'driver.html')));

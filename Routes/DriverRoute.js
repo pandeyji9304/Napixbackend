@@ -6,7 +6,8 @@ const sendEmail = require('../Utils/email');
 
 const router = express.Router();
 const { generatePassword, hashPassword } = require('../Utils/password');
-const authenticateLogisticsHead = require('../Utils/authmiddleware');
+const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
+const { authenticateDriver } = require('../Utils/authmiddleware');
 
 // Add Driver
 router.post('/add-driver', authenticateLogisticsHead, async (req, res) => {
@@ -46,6 +47,53 @@ router.post('/add-driver', authenticateLogisticsHead, async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 });
+
+router.get('/driverdetail', authenticateDriver, async (req, res) => {
+    const { email } = req.query; // For logistics head to access other driver details
+
+    try {
+        if (req.role === 'driver') {
+            // If logged-in user is a driver, return their own details
+            const driver = req.driver;
+            return res.status(200).json({
+                name: driver.name,
+                mobileNumber: driver.mobileNumber,
+                email: driver.email,
+                
+            });
+        }
+
+        if (req.role === 'logistics_head') {
+            // If logged-in user is a logistics head, allow them to access any driver's details
+            if (!email) {
+                return res.status(400).json({ error: 'Email query parameter is required' });
+            }
+
+            // Find the driver by email
+            const driver = await Driver.findOne({ email });
+
+            if (!driver) {
+                return res.status(404).json({ error: 'Driver not found' });
+            }
+
+            return res.status(200).json({
+                name: driver.name,
+                mobileNumber: driver.mobileNumber,
+                email: driver.email,
+            });
+        }
+
+        // If user role is neither driver nor logistics head
+        res.status(403).json({ error: 'Access denied' });
+    } catch (err) {
+        console.error('Error fetching driver details:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+
+
+
 
 // Route to get all drivers
 router.get('/getdrivers', async (req, res) => {

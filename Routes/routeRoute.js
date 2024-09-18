@@ -4,13 +4,14 @@ const AssignedTrucks = require('../Models/AssignedTrucks')
 const router = express.Router();
 const io = require('socket.io')(require('http').createServer());
 const Driver = require('../Models/Driver');
-const authenticateLogisticsHead = require('../Utils/authmiddleware');
+const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 const mongoose = require('mongoose');
 
 // Middleware to check if the user is a logistics head
 router.use(authenticateLogisticsHead);
 
 router.post('/create-route', async (req, res) => {
+    console.log("createroute hited")
     const { vehicleNumber, driverName, fromLocation, toLocation, departureDetails } = req.body;
 
     try {
@@ -55,6 +56,34 @@ router.post('/create-route', async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 });
+
+
+router.get('/getroutes', async (req, res) => {
+    try {
+        // Retrieve all route details
+        const routes = await Route.find();
+
+        // Retrieve all assigned trucks
+        const assignedTrucks = await AssignedTrucks.find();
+
+        // Create a map of vehicle numbers to assigned trucks for quick lookup
+        const assignedTrucksMap = assignedTrucks.reduce((map, truck) => {
+            map[truck.vehicleNumber] = truck;
+            return map;
+        }, {});
+
+        // Map routes to include the assigned truck details
+        const routesWithTrucks = routes.map(route => ({
+            ...route.toObject(),
+            assignedTruck: assignedTrucksMap[route.vehicleNumber] || null
+        }));
+
+        res.status(200).json({ routes: routesWithTrucks });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 
 
 

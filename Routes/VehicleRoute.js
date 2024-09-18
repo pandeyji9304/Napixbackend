@@ -1,10 +1,11 @@
 const express = require('express');
 const Vehicle = require('../Models/Vehicle');
-const authenticateLogisticsHead = require('../Utils/authmiddleware');
+const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 const router = express.Router();
 
 // Add Vehicle
 router.post('/add', authenticateLogisticsHead, async (req, res) => {
+    console.log('Vehicle route hit');
     const { vehicleNumber } = req.body;
     try {
         const newVehicle = new Vehicle({ vehicleNumber, assignedBy: req.user._id });
@@ -16,7 +17,8 @@ router.post('/add', authenticateLogisticsHead, async (req, res) => {
 });
 
 // Route to get all vehicles
-router.get('/getvehicles', async (req, res) => {
+router.get('/getvehicles',authenticateLogisticsHead, async (req, res) => {
+    console.log("get vehicleroute hit")
     try {
         const vehicles = await Vehicle.find();
         res.status(200).json(vehicles);
