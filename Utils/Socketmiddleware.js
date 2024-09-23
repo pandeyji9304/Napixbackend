@@ -9,7 +9,8 @@ const mongoose = require("mongoose");
 const isTruckConnected = (vehicleNumber) => global.connectedTrucks.includes(vehicleNumber);
 
 const authenticate = (socket, next) => {
-    const token = socket.handshake.auth.token;
+    const token = socket.handshake.headers['authorization']?.replace('Bearer ', '');
+    console.log('Received token:', token); // Add logging
     if (!token) return next(new Error('Authentication error'));
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
@@ -18,6 +19,8 @@ const authenticate = (socket, next) => {
         next();
     });
 };
+
+
 
 
 const handleConnection = (io) => (socket) => {
@@ -31,22 +34,34 @@ const handleConnection = (io) => (socket) => {
         socket.emit('connectedTrucks', global.connectedTrucks);
     });
 
+    socket.on('getConnectedTrucks', () => {
+        if (socket.user.role !== 'logistics_head') {
+            socket.emit('message', 'Unauthorized access');
+            return;
+        }
+        socket.emit('connectedTrucks', global.connectedTrucks);
+    });
+
     socket.on('joinRoom', async (vehicleNumber) => {
         try {
             if (socket.user.role === 'driver') {
-                if (isTruckConnected(vehicleNumber)) {
-                    socket.emit('message', 'This truck is already connected.');
+                // Check if the driver is already in the room
+                if (socket.rooms.has(vehicleNumber)) {
+                    socket.emit('message', `You are already connected to vehicle: ${vehicleNumber}`);
                     return;
                 }
 
+                // Check if the vehicle is assigned to any driver
                 const assignedTruck = await AssignedTrucks.findOne({ vehicleNumber });
                 if (!assignedTruck) {
                     socket.emit('message', 'You are not assigned to this vehicle. Access denied.');
                     return;
                 }
+
+                // Join the room
                 socket.join(vehicleNumber);
                 await Route.updateOne({ vehicleNumber }, { status: 'driving safely' });
-
+                
                 global.connectedTrucks.push(vehicleNumber);
                 socket.emit('message', `Successfully joined the room for vehicle: ${vehicleNumber}`);
             } else if (socket.user.role === 'logistics_head') {
@@ -136,12 +151,11 @@ const handleConnection = (io) => (socket) => {
                 }
 
                 await Route.deleteMany({ vehicleNumber }).session(session);
-
                 await session.commitTransaction();
                 session.endSession();
 
                 global.connectedTrucks = global.connectedTrucks.filter(truck => truck !== vehicleNumber);
-                io.to(vehicleNumber).emit('message', `Route has ended. The room has been closed, vehicle ${vehicleNumber} has been removed from the assigned list, and associated routes have been deleted.`);
+                io.to(vehicleNumber).emit('message', `Route has ended. You have left the room for vehicle ${vehicleNumber}.`);
             } catch (error) {
                 await session.abortTransaction();
                 throw error;
@@ -151,7 +165,7 @@ const handleConnection = (io) => (socket) => {
             socket.emit('message', 'An error occurred while ending the route.');
         }
     });
-
+    
     socket.on('disconnect', () => {
         global.connectedTrucks.forEach(truckNumber => {
             if (socket.rooms.has(truckNumber)) {

@@ -1,5 +1,6 @@
 const express = require('express');
 const Vehicle = require('../Models/Vehicle');
+const Message = require('../Models/Messages');
 const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 const router = express.Router();
 
@@ -24,6 +25,19 @@ router.get('/getvehicles',authenticateLogisticsHead, async (req, res) => {
         res.status(200).json(vehicles);
     } catch (err) {
         res.status(400).json({ error: err.message });
+    }
+});
+
+
+router.get('/messages/:vehicleNumber', async (req, res) => {
+    const { vehicleNumber } = req.params;
+    try {
+        const messageDoc = await Message.find({ truckNumber: vehicleNumber });
+            res.status(200).json(messageDoc);
+        
+    } catch (error) {
+        console.error('Error retrieving messages:', error);
+        res.status(400).json({error: err.message  });
     }
 });
 
