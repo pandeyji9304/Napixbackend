@@ -1,5 +1,6 @@
 const express = require('express');
 const Vehicle = require('../Models/Vehicle');
+const Route = require('../Models/Route');
 const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 const router = express.Router();
 
