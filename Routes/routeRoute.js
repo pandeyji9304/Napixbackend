@@ -11,8 +11,9 @@ const mongoose = require('mongoose');
 router.use(authenticateLogisticsHead);
 
 router.post('/create-route', async (req, res) => {
-    console.log("createroute hited")
-    const { vehicleNumber, driverName, fromLocation, toLocation, departureDetails } = req.body;
+    console.log("create route hit");
+
+    const { vehicleNumber, driverName, fromLocation, toLocation, departureDetails, initialMessage } = req.body;
 
     try {
         // Ensure that the driver exists
@@ -24,13 +25,14 @@ router.post('/create-route', async (req, res) => {
             return res.status(403).json({ message: 'Only logistics heads can assign trucks' });
         }
 
-        // Create a new route
+        // Create the route object, with the possibility of an initial message
         const newRoute = new Route({
             vehicleNumber,
             driverName,
             fromLocation,
             toLocation,
             departureDetails,
+            messages: initialMessage ? [{ message: initialMessage }] : [] // Add initial message if provided
         });
 
         await newRoute.save();
@@ -38,7 +40,9 @@ router.post('/create-route', async (req, res) => {
         // Check if the truck is already assigned
         let assignedTruck = await AssignedTrucks.findOne({ vehicleNumber });
         if (!assignedTruck) {
-            assignedTruck = new AssignedTrucks({ vehicleNumber });
+            assignedTruck = new AssignedTrucks({
+                vehicleNumber,
+            });
             await assignedTruck.save();
         }
 
@@ -48,14 +52,16 @@ router.post('/create-route', async (req, res) => {
             driverName,
             fromLocation,
             toLocation,
-            departureDetails
+            departureDetails,
+            initialMessage: initialMessage || ''
         });
 
-        res.status(201).json({ message: 'Route added and truck assigned', routeId: newRoute._id });
+        res.status(201).json({ message: 'Route added, truck assigned, and initial message stored', routeId: newRoute._id });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
+
 
 
 router.get('/getroutes', async (req, res) => {
@@ -102,6 +108,26 @@ router.post('/validate-truck', async (req, res) => {
         res.status(200).json({ message: 'Truck is valid and assigned' });
     } catch (err) {
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.get('/routes/:vehicleNumber', async (req, res) => {
+    const { vehicleNumber } = req.params;
+    
+    try {
+        // Find all routes associated with the given vehicleNumber
+        const routes = await Route.find({ vehicleNumber });
+
+        if (routes && routes.length > 0) {
+            // Return the route details
+            res.status(200).json(routes);
+        } else {
+            // If no routes found, return a suitable message
+            res.status(404).json({ message: 'No routes found for this vehicle.' });
+        }
+    } catch (error) {
+        console.error('Error retrieving routes:', error);
+        res.status(400).json({ error: error.message });
     }
 });
 

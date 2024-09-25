@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const Message = require('../Models/Messages');
 const AssignedTrucks = require('../Models/AssignedTrucks');
 const Route = require('../Models/Route');
 const { JWT_SECRET } = process.env;
@@ -78,8 +77,8 @@ const handleConnection = (io) => (socket) => {
     socket.on('sendMessage', async (vehicleNumber, message) => {
         try {
             if (socket.rooms.has(vehicleNumber)) {
-                await Message.findOneAndUpdate(
-                    { truckNumber: vehicleNumber },
+                await Route.findOneAndUpdate(
+                    { vehicleNumber },
                     {
                         $push: {
                             messages: {
@@ -115,20 +114,22 @@ const handleConnection = (io) => (socket) => {
         }
     });
 
-    socket.on('getMessages', async (vehicleNumber) => {
-        try {
-            const messageDoc = await Message.findOne({ truckNumber: vehicleNumber });
+    // Fetch messages from the Route schema for a specific vehicle
+socket.on('getMessages', async (vehicleNumber) => {
+    try {
+        const route = await Route.findOne({ vehicleNumber });
 
-            if (messageDoc) {
-                socket.emit('chatMessages', messageDoc.messages);
-            } else {
-                socket.emit('chatMessages', []);
-            }
-        } catch (error) {
-            console.error('Error retrieving messages:', error);
-            socket.emit('message', 'An error occurred while retrieving messages.');
+        if (route && route.messages.length > 0) {
+            socket.emit('chatMessages', route.messages);
+        } else {
+            socket.emit('chatMessages', []);  // Send an empty array if no messages
         }
-    });
+    } catch (error) {
+        console.error('Error retrieving messages:', error);
+        socket.emit('message', 'An error occurred while retrieving messages.');
+    }
+});
+
 
     socket.on('endRoute', async (vehicleNumber) => {
         try {

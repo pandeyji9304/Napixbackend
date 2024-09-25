@@ -1,6 +1,5 @@
 const express = require('express');
 const Vehicle = require('../Models/Vehicle');
-const Message = require('../Models/Messages');
 const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 const router = express.Router();
 
@@ -32,13 +31,21 @@ router.get('/getvehicles',authenticateLogisticsHead, async (req, res) => {
 router.get('/messages/:vehicleNumber', async (req, res) => {
     const { vehicleNumber } = req.params;
     try {
-        const messageDoc = await Message.find({ truckNumber: vehicleNumber });
-            res.status(200).json(messageDoc);
-        
+        // Find the route document associated with the given vehicleNumber
+        const route = await Route.findOne({ vehicleNumber });
+
+        if (route) {
+            // Return the messages from the route document
+            res.status(200).json(route.messages);
+        } else {
+            // If no route found, return an empty array or a suitable message
+            res.status(404).json({ message: 'No route found for this vehicle.' });
+        }
     } catch (error) {
         console.error('Error retrieving messages:', error);
-        res.status(400).json({error: err.message  });
+        res.status(400).json({ error: error.message });
     }
 });
+
 
 module.exports = router;
