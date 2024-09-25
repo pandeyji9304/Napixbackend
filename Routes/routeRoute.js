@@ -62,6 +62,74 @@ router.post('/create-route', async (req, res) => {
     }
 });
 
+router.get('/routes/:id/messages', async (req, res) => {
+    try {
+        const route = await Route.findById(req.params.id);
+        if (!route) {
+            return res.status(404).send({ message: 'Route not found' });
+        }
+
+        // Send only the messages
+        res.send({ messages: route.messages });
+    } catch (error) {
+        res.status(500).send({ message: 'Server error', error });
+    }
+});
+
+router.put('/edit-route/:id', async (req, res) => {
+    console.log("edit route hit");
+
+    const { vehicleNumber, driverName, fromLocation, toLocation, departureDetails, updatedMessage } = req.body;
+    const routeId = req.params.id;
+
+    try {
+        // Ensure that the driver exists
+        const driver = await Driver.findOne({ name: driverName });
+        if (!driver) return res.status(404).json({ error: 'Driver not found' });
+
+        // Only logistics heads can edit routes
+        if (req.user.role !== 'logistics_head') {
+            return res.status(403).json({ message: 'Only logistics heads can edit routes' });
+        }
+
+        // Find the existing route by ID
+        const existingRoute = await Route.findById(routeId);
+        if (!existingRoute) {
+            return res.status(404).json({ error: 'Route not found' });
+        }
+
+        // Update the route details
+        existingRoute.vehicleNumber = vehicleNumber || existingRoute.vehicleNumber;
+        existingRoute.driverName = driverName || existingRoute.driverName;
+        existingRoute.fromLocation = fromLocation || existingRoute.fromLocation;
+        existingRoute.toLocation = toLocation || existingRoute.toLocation;
+        existingRoute.departureDetails = departureDetails || existingRoute.departureDetails;
+
+        // Update messages if provided
+        if (updatedMessage) {
+            existingRoute.messages.push({ message: updatedMessage });
+        }
+
+        // Save the updated route
+        await existingRoute.save();
+
+        // Notify the room associated with the vehicle number
+        io.to(vehicleNumber).emit('routeUpdated', {
+            routeId,
+            vehicleNumber,
+            driverName,
+            fromLocation,
+            toLocation,
+            departureDetails,
+            updatedMessage: updatedMessage || ''
+        });
+
+        res.status(200).json({ message: 'Route updated successfully', routeId: existingRoute._id });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 
 
 router.get('/getroutes', async (req, res) => {
@@ -123,7 +191,7 @@ router.get('/routes/:vehicleNumber', async (req, res) => {
             res.status(200).json(routes);
         } else {
             // If no routes found, return a suitable message
-            res.status(404).json({ message: 'No routes found for this vehicle.' });
+            res.json(routes);
         }
     } catch (error) {
         console.error('Error retrieving routes:', error);
