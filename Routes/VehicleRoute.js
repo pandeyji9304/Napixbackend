@@ -17,6 +17,35 @@ router.post('/add', authenticateLogisticsHead, async (req, res) => {
     }
 });
 
+// DELETE vehicle endpoint
+router.delete('/delete/:vehicleNumber', authenticateLogisticsHead, async (req, res) => {
+    const { vehicleNumber } = req.params;
+
+    try {
+        // Ensure only logistics heads can delete vehicles
+        if (req.user.role !== 'logistics_head') {
+            return res.status(403).json({ message: 'Only logistics heads can delete vehicles' });
+        }
+
+        // Find and delete the vehicle by vehicleNumber
+        const deletedVehicle = await Vehicle.findOneAndDelete({ vehicleNumber });
+
+        if (!deletedVehicle) {
+            return res.status(404).json({ message: 'Vehicle not found' });
+        }
+
+        // Optionally, clean up any related data, such as routes assigned to this vehicle
+        await Route.deleteMany({ vehicleNumber });
+
+        // Respond with success message
+        res.status(200).json({ message: 'Vehicle and associated routes deleted successfully' });
+
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to delete vehicle', details: err.message });
+    }
+});
+
+
 // Route to get all vehicles
 router.get('/getvehicles',authenticateLogisticsHead, async (req, res) => {
     console.log("get vehicleroute hit")

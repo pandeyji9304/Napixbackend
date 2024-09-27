@@ -62,6 +62,43 @@ router.post('/create-route', async (req, res) => {
     }
 });
 
+// DELETE route endpoint
+router.delete('/delete-route/:routeId', async (req, res) => {
+    const { routeId } = req.params;
+
+    try {
+        // Ensure only logistics heads can delete routes
+        if (req.user.role !== 'logistics_head') {
+            return res.status(403).json({ message: 'Only logistics heads can delete routes' });
+        }
+
+        // Find the route by ID and delete it
+        const deletedRoute = await Route.findByIdAndDelete(routeId);
+
+        if (!deletedRoute) {
+            return res.status(404).json({ message: 'Route not found' });
+        }
+
+        // Optionally, if the truck should be removed from AssignedTrucks when the route is deleted:
+        const { vehicleNumber } = deletedRoute;
+        let assignedTruck = await AssignedTrucks.findOne({ vehicleNumber });
+        
+        if (assignedTruck) {
+            await AssignedTrucks.findByIdAndDelete(assignedTruck._id);
+        }
+
+        // Notify the room associated with the vehicle number that the route was deleted
+        io.to(vehicleNumber).emit('routeDeleted', { vehicleNumber, routeId });
+
+        // Respond with success message
+        res.status(200).json({ message: 'Route deleted successfully', routeId });
+
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to delete route', details: err.message });
+    }
+});
+
+
 router.get('/routes/:id/messages', async (req, res) => {
     try {
         const route = await Route.findById(req.params.id);

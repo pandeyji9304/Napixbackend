@@ -48,6 +48,29 @@ router.post('/add-driver', authenticateLogisticsHead, async (req, res) => {
     }
 });
 
+// DELETE driver route
+router.delete('/delete-driver/:id', authenticateLogisticsHead, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Find the driver by ID and delete
+        const deletedDriver = await Driver.findByIdAndDelete(id);
+
+        if (!deletedDriver) {
+            return res.status(404).json({ message: 'Driver not found' });
+        }
+
+        // Optionally, you can log the action or notify an admin here
+
+        // Respond to the client
+        res.status(200).json({ message: 'Driver deleted successfully' });
+
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to delete driver' });
+    }
+});
+
+
 router.get('/driverdetail', authenticateDriver, async (req, res) => {
     const { email } = req.query; // For logistics head to access other driver details
 
