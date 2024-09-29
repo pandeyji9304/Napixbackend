@@ -3,14 +3,16 @@ const Vehicle = require('../Models/Vehicle');
 const Route = require('../Models/Route');
 const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 const router = express.Router();
+const User =  require('../Models/User')
 
 // Add Vehicle
 router.post('/add', authenticateLogisticsHead, async (req, res) => {
     console.log('Vehicle route hit');
     const { vehicleNumber } = req.body;
     try {
-        const newVehicle = new Vehicle({ vehicleNumber, assignedBy: req.user._id });
+        const newVehicle = new Vehicle({ vehicleNumber, assignedBy: req.user._id }); // Assign vehicle to the logged-in user
         await newVehicle.save();
+
         res.status(201).json({ message: 'Vehicle added' });
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -47,10 +49,16 @@ router.delete('/delete/:vehicleNumber', authenticateLogisticsHead, async (req, r
 
 
 // Route to get all vehicles
-router.get('/getvehicles',authenticateLogisticsHead, async (req, res) => {
-    console.log("get vehicleroute hit")
+router.get('/getvehicles', authenticateLogisticsHead, async (req, res) => {
+    console.log("get vehicle route hit");
     try {
-        const vehicles = await Vehicle.find();
+        // Ensure the user is a logistics head
+        if (req.user.role !== 'logistics_head') {
+            return res.status(403).json({ error: 'Access denied: Only logistics heads can view vehicles.' });
+        }
+
+        // Retrieve vehicles assigned to the logistics head
+        const vehicles = await Vehicle.find({ assignedBy: req.user._id }); 
         res.status(200).json(vehicles);
     } catch (err) {
         res.status(400).json({ error: err.message });

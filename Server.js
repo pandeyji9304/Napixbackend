@@ -12,7 +12,7 @@ const vehicleRoutes = require('./Routes/VehicleRoute');
 const routeRoutes = require('./Routes/routeRoute');
 const authRoutes = require('./Routes/authroutes');
 const socketEvents = require('./Utils/Socketmiddleware');
-
+const upload = require('./Config/uploadConfig');
 require('dotenv').config();
 
 const app = express();
@@ -25,6 +25,9 @@ const io = socketIo(server, {
       allowedHeaders: ['Content-Type', 'Authorization']
     }
   });
+
+// Serve static files (uploaded images)
+app.use('/uploads', express.static('uploads'));
 
 // Connect to the database
 connectDB();

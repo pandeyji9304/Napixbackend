@@ -32,10 +32,12 @@ router.post('/create-route', async (req, res) => {
             fromLocation,
             toLocation,
             departureDetails,
-            messages: initialMessage ? [{ message: initialMessage }] : [] // Add initial message if provided
+            messages: initialMessage ? [{ message: initialMessage }] : [],
+            logisticsHead: req.user._id 
         });
 
         await newRoute.save();
+
 
         // Check if the truck is already assigned
         let assignedTruck = await AssignedTrucks.findOne({ vehicleNumber });
@@ -171,8 +173,9 @@ router.put('/edit-route/:id', async (req, res) => {
 
 router.get('/getroutes', async (req, res) => {
     try {
-        // Retrieve all route details
-        const routes = await Route.find();
+
+        // Retrieve all route details for the logged-in logistics head
+        const routes = await Route.find({ logisticsHead: req.user._id });
 
         // Retrieve all assigned trucks
         const assignedTrucks = await AssignedTrucks.find();

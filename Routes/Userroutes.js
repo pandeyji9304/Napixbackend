@@ -28,6 +28,32 @@ router.post('/signup/logistics-head', async (req, res) => {
     }
 });
 
+router.put('/edit-user/:id', authenticateLogisticsHead, async (req, res) => {
+    const { id } = req.params;
+    const { name, email, phoneNumber, companyName } = req.body;
+
+    try {
+        // Find the user by ID and update their details
+        const updatedUser = await User.findByIdAndUpdate(
+            id,
+            { name, email, phoneNumber, companyName },
+            { new: true, runValidators: true } // Return the updated document and run validation
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Respond to the client with the updated user details
+        res.status(200).json({ message: 'User details updated successfully', user: updatedUser });
+
+    } catch (err) {
+        console.error(err); // Log the error for debugging
+        res.status(400).json({ error: err.message });
+    }
+});
+
+
 // Route to get user details after signup
 // Route to get user details
 router.get('/profile',authenticateLogisticsHead, async (req, res) => {
