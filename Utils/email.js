@@ -23,3 +23,4 @@ const sendEmail = (to, subject, text) => {
 };
 
 module.exports = sendEmail;
+//mail i working in local
