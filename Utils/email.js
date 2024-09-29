@@ -10,6 +10,10 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+console.log('Email User:', process.env.EMAIL_USER);
+console.log('Email Pass:', process.env.EMAIL_PASS ? 'Loaded' : 'Not Loaded');
+
+
 // Function to send email
 const sendEmail = (to, subject, text) => {
     const mailOptions = {
