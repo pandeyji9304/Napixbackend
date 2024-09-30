@@ -151,7 +151,7 @@ socket.on('getMessages', async (vehicleNumber) => {
                     return;
                 }
 
-               // await Route.deleteMany({ vehicleNumber }).session(session);
+                await Route.deleteMany({ vehicleNumber }).session(session);
                 await session.commitTransaction();
                 session.endSession();
 
