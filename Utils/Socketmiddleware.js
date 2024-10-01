@@ -30,12 +30,12 @@ const handleConnection = (io) => (socket) => {
         socket.emit('connectedTrucks', global.connectedTrucks);
     });
 
-    socket.on('joinRoom', async (vehicleNumber) => {
+    socket.on('joinRoom', async ({ vehicleNumber, driverId }) => {
         try {
             const room = io.sockets.adapter.rooms.get(vehicleNumber);
             const numClients = room ? room.size : 0;
 
-            if (numClients >= 1) {
+            if (numClients >= 2) {
                 socket.emit('message', `Room for vehicle ${vehicleNumber} is full. Only 2 people are allowed at a time.`);
                 return;
             }
@@ -47,9 +47,9 @@ const handleConnection = (io) => (socket) => {
                     return;
                 }
 
-                // Check if the vehicle is assigned to any driver
-                const assignedTruck = await AssignedTrucks.findOne({ vehicleNumber });
-                if (!assignedTruck) {
+                // Check if the vehicle is assigned to the driver
+                const assignedTruck = await AssignedTrucks.findOne({ vehicleNumber, driverId });
+                if (!assignedTruck || assignedTruck.driverId !== socket.user.id) {
                     socket.emit('message', 'You are not assigned to this vehicle. Access denied.');
                     return;
                 }
@@ -71,42 +71,43 @@ const handleConnection = (io) => (socket) => {
         }
     });
 
-
-
-    socket.on('sendMessage', async (vehicleNumber, message) => {
+    socket.on('sendMessage', async ({ vehicleNumber, driverId, message }) => {
         try {
-            if (socket.rooms.has(vehicleNumber)) {
-                await Route.findOneAndUpdate(
-                    { vehicleNumber },
-                    {
-                        $push: {
-                            messages: {
-                                message,
-                                timestamp: new Date()
-                            }
-                        }
-                    },
-                    { upsert: true, new: true }
-                );
-
-                await Route.findOneAndUpdate(
-                    { vehicleNumber },
-                    { status: 'active alerts' },
-                    { new: true }
-                );
-
-                // Emit to truck room
-                io.to(vehicleNumber).emit('message', message);
-
-                // Emit to all logistics heads
-                io.sockets.sockets.forEach(client => {
-                    if (client.user && client.user.role === 'logistics_head') {
-                        client.emit('message', `New message for truck ${vehicleNumber}: ${message}`);
-                    }
-                });
-            } else {
+            // Check if the driver is in the room and assigned to the vehicle
+            const assignedTruck = await AssignedTrucks.findOne({ vehicleNumber, driverId });
+            if (!socket.rooms.has(vehicleNumber) || !assignedTruck || assignedTruck.driverId !== socket.user.id) {
                 socket.emit('message', 'You are not allowed to send messages from this room.');
+                return;
             }
+
+            await Route.findOneAndUpdate(
+                { vehicleNumber },
+                {
+                    $push: {
+                        messages: {
+                            message,
+                            timestamp: new Date()
+                        }
+                    }
+                },
+                { upsert: true, new: true }
+            );
+
+            await Route.findOneAndUpdate(
+                { vehicleNumber },
+                { status: 'active alerts' },
+                { new: true }
+            );
+
+            // Emit to truck room
+            io.to(vehicleNumber).emit('message', message);
+
+            // Emit to all logistics heads
+            io.sockets.sockets.forEach(client => {
+                if (client.user && client.user.role === 'logistics_head') {
+                    client.emit('message', `New message for truck ${vehicleNumber}: ${message}`);
+                }
+            });
         } catch (error) {
             console.error('Error handling sendMessage:', error);
             socket.emit('message', 'An error occurred while sending the message.');
@@ -149,7 +150,7 @@ const handleConnection = (io) => (socket) => {
                     return;
                 }
 
-                //await Route.deleteMany({ vehicleNumber }).session(session);
+                await Route.deleteMany({ vehicleNumber }).session(session);
                 await session.commitTransaction();
                 session.endSession();
 
