@@ -71,6 +71,8 @@ const handleConnection = (io) => (socket) => {
         }
     });
 
+
+
     socket.on('sendMessage', async (vehicleNumber, message) => {
         try {
             if (socket.rooms.has(vehicleNumber)) {
@@ -147,7 +149,7 @@ const handleConnection = (io) => (socket) => {
                     return;
                 }
 
-                await Route.deleteMany({ vehicleNumber }).session(session);
+                //await Route.deleteMany({ vehicleNumber }).session(session);
                 await session.commitTransaction();
                 session.endSession();
 
