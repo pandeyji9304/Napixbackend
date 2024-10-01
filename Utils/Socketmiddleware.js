@@ -35,7 +35,7 @@ const handleConnection = (io) => (socket) => {
             const room = io.sockets.adapter.rooms.get(vehicleNumber);
             const numClients = room ? room.size : 0;
 
-            if (numClients >= 2) {
+            if (numClients >= 1) {
                 socket.emit('message', `Room for vehicle ${vehicleNumber} is full. Only 2 people are allowed at a time.`);
                 return;
             }
