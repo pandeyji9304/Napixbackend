@@ -19,9 +19,6 @@ const authenticate = (socket, next) => {
     });
 };
 
-
-
-
 const handleConnection = (io) => (socket) => {
     console.log('New client connected');
 
@@ -33,16 +30,16 @@ const handleConnection = (io) => (socket) => {
         socket.emit('connectedTrucks', global.connectedTrucks);
     });
 
-    socket.on('getConnectedTrucks', () => {
-        if (socket.user.role !== 'logistics_head') {
-            socket.emit('message', 'Unauthorized access');
-            return;
-        }
-        socket.emit('connectedTrucks', global.connectedTrucks);
-    });
-
     socket.on('joinRoom', async (vehicleNumber) => {
         try {
+            const room = io.sockets.adapter.rooms.get(vehicleNumber);
+            const numClients = room ? room.size : 0;
+
+            if (numClients >= 2) {
+                socket.emit('message', `Room for vehicle ${vehicleNumber} is full. Only 2 people are allowed at a time.`);
+                return;
+            }
+
             if (socket.user.role === 'driver') {
                 // Check if the driver is already in the room
                 if (socket.rooms.has(vehicleNumber)) {
@@ -115,21 +112,20 @@ const handleConnection = (io) => (socket) => {
     });
 
     // Fetch messages from the Route schema for a specific vehicle
-socket.on('getMessages', async (vehicleNumber) => {
-    try {
-        const route = await Route.findOne({ vehicleNumber });
+    socket.on('getMessages', async (vehicleNumber) => {
+        try {
+            const route = await Route.findOne({ vehicleNumber });
 
-        if (route && route.messages.length > 0) {
-            socket.emit('chatMessages', route.messages);
-        } else {
-            socket.emit('chatMessages', []);  // Send an empty array if no messages
+            if (route && route.messages.length > 0) {
+                socket.emit('chatMessages', route.messages);
+            } else {
+                socket.emit('chatMessages', []);  // Send an empty array if no messages
+            }
+        } catch (error) {
+            console.error('Error retrieving messages:', error);
+            socket.emit('message', 'An error occurred while retrieving messages.');
         }
-    } catch (error) {
-        console.error('Error retrieving messages:', error);
-        socket.emit('message', 'An error occurred while retrieving messages.');
-    }
-});
-
+    });
 
     socket.on('endRoute', async (vehicleNumber) => {
         try {
