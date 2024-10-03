@@ -10,7 +10,7 @@ const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 
 // Sign Up
 router.post('/signup/logistics-head', async (req, res) => {
-    const { name, email, phoneNumber, password, companyName } = req.body;
+    const { name, email, phoneNumber, password, companyName, } = req.body;
     try {
         const hashedPassword = await hashPassword(password);
         const newUser = new User({
@@ -65,6 +65,7 @@ router.get('/profile',authenticateLogisticsHead, async (req, res) => {
         }
         res.status(200).json({
             id: user._id,
+            image: user.image,
             name: user.name,
             email: user.email,
             phoneNumber: user.phoneNumber,

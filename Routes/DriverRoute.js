@@ -120,6 +120,7 @@ router.get('/driverdetail', authenticateDriver, async (req, res) => {
                 name: driver.name,
                 mobileNumber: driver.mobileNumber,
                 email: driver.email,
+                image: driver.image
                 
             });
         }
