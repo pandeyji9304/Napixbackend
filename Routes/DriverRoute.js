@@ -19,35 +19,36 @@ router.post('/add-driver', authenticateLogisticsHead, async (req, res) => {
         const password = generatePassword();
         const hashedPassword = await hashPassword(password);
 
-        // Create a new driver
+        // Create a new driver instance
         const newDriver = new Driver({
             name,
             mobileNumber,
             email,
             password: hashedPassword,
             assignedBy: req.user._id
-            
         });
-
-        // Save the driver to the database
-        await newDriver.save();
 
         // Attempt to send an email with the credentials
         try {
             await sendEmail(email, 'Your Napix Login Credentials', `Your password is: ${password}`);
             console.log('Email sent successfully');
+
+            // Save the driver to the database only if the email is sent successfully
+            await newDriver.save();
+
+            // Respond to the client
+            return res.status(201).json({ message: 'Driver added' });
         } catch (emailError) {
             console.error('Failed to send email:', emailError.message);
-            // Optionally, you can log the error or notify an admin but ensure the driver creation is not affected
+            // Respond with an error message indicating the email sending failure
+            return res.status(500).json({ error: 'Driver not added. Failed to send email.' });
         }
-
-        // Respond to the client
-        res.status(201).json({ message: 'Driver added' });
 
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
+
 
 
 

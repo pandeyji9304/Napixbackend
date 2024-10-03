@@ -21,7 +21,7 @@ const authenticateLogisticsHead = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
 
-    console.log('Decoded token:', decoded); // Log for debugging
+    // console.log('Decoded token:', decoded); // Log for debugging
 
     // Ensure that the user has the correct role
     if (req.user.role !== 'logistics_head') {
@@ -36,6 +36,7 @@ const authenticateLogisticsHead = async (req, res, next) => {
 };
 
 // Middleware to authenticate driver
+// Middleware to authenticate driver
 const authenticateDriver = async (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
 
@@ -48,7 +49,7 @@ const authenticateDriver = async (req, res, next) => {
       const driverId = new mongoose.Types.ObjectId(decoded._id);
 
       console.log('Decoded Token:', decoded); // Debugging: Check the decoded token
-      console.log('Searching Driver with ID:', driverId); // Debugging: Check the driverId
+      console.log('Driver Email from Token:', decoded.email); // Log the email here
 
       const driver = await Driver.findById(driverId);
 
@@ -58,7 +59,8 @@ const authenticateDriver = async (req, res, next) => {
       }
 
       req.driver = driver;
-      req.role = driver.role; 
+      req.role = driver.role;
+      req.email = decoded.email; // Access the email here if needed
       next();
   } catch (error) {
       console.error('Authentication error:', error);

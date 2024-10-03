@@ -14,7 +14,7 @@ const RouteSchema = new mongoose.Schema({
     status: {
         type: String,
         default: 'scheduled', // Default status when the route is created
-        enum: ['scheduled', 'driving safely', 'active alerts'], // Enum for possible statuses
+        enum: ['scheduled', 'driving safely', 'active alerts', 'ended'], // Enum for possible statuses
     },
     // Embedding messages inside the Route schema
     messages: [{

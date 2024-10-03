@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema({
     password: String,
     role: { type: String, default: 'logistics_head' },
     companyName: String,
-    image: { type: String, default: true },
+    image: { type: String, default: 'https://i.postimg.cc/43CsrrKY/Screenshot-2024-09-07-at-6-08-52-PM.png' },
     
 });
 
