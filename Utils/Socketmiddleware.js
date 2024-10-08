@@ -31,7 +31,6 @@ const handleConnection = (io) => (socket) => {
 
     socket.on('joinRoom', async (vehicleNumber) => {
         try {
-            // Check if the user is a driver
             if (socket.user.role !== 'driver') {
                 return socket.emit('message', 'Invalid role');
             }
@@ -41,24 +40,21 @@ const handleConnection = (io) => (socket) => {
                 return socket.emit('message', `You are already connected to vehicle: ${vehicleNumber}`);
             }
     
-            // Check if the truck is assigned to this driver
             const assignedTruck = await AssignedTrucks.findOne({ vehicleNumber, driverEmail: socket.user.email });
             if (!assignedTruck) {
                 return socket.emit('message', 'You are not assigned to this vehicle. Access denied.');
             }
     
-            // Get the latest route that is not ended
             const latestRoute = await Route.findOne({ vehicleNumber, status: { $ne: 'ended' } }).sort({ assignmentTime: -1 });
             if (latestRoute) {
-                // Update the latest route's status if it's not ended
                 latestRoute.status = 'driving safely'; // Update status to "driving safely"
-                await latestRoute.save(); // Save the updated route
+                await latestRoute.save();
+                io.to(roomName).emit('statusUpdate', latestRoute.status); // Emit status update
             } else {
                 socket.emit('message', 'No active route found for this vehicle.');
                 return;
             }
     
-            // Join the room for this vehicle and driver
             socket.join(roomName);
             console.log(`Driver ${socket.user.email} joined room: ${roomName}`);
             socket.emit('message', `Successfully joined the room for vehicle: ${vehicleNumber}`);
@@ -69,8 +65,6 @@ const handleConnection = (io) => (socket) => {
         }
     });
     
-    
-
     socket.on('sendMessage', async (vehicleNumber, message) => {
         try {
             const roomName = `${vehicleNumber}-${socket.user.email}`;
@@ -80,30 +74,22 @@ const handleConnection = (io) => (socket) => {
     
             console.log(`Sending message to room: ${roomName}`);
     
-            // Fetch the latest route for this vehicle where status is not 'ended'
             const latestRoute = await Route.findOne({ vehicleNumber, status: { $ne: 'ended' } }).sort({ assignmentTime: -1 });
     
-            // If no active route is found, return an error
             if (!latestRoute) {
                 return socket.emit('message', 'No active route found for this vehicle.');
             }
     
-            // Push the message to the messages array of the latest route
             latestRoute.messages.push({ message, timestamp: new Date() });
     
-            // Update the status of the latest route based on the message content
-            if (message.startsWith('D')) {
-                latestRoute.status = 'active alerts'; // Change status to "active alerts" if the message starts with "D"
-            } else {
-                latestRoute.status = 'driving safely'; // Otherwise, set status to "Active alertd"
+            // Update status to "active alerts" if the message starts with 'D'
+            if (latestRoute.status !== 'active alerts' && message.startsWith('D')) {
+                latestRoute.status = 'active alerts'; 
+                io.to(roomName).emit('statusUpdate', latestRoute.status); // Emit status update
             }
     
             await latestRoute.save();
-    
-            // Broadcast the message to the room
             io.to(roomName).emit('message', message);
-    
-            // Notify logistics heads about the new message
             notifyLogisticsHeads(io, vehicleNumber, message);
     
         } catch (error) {
@@ -140,18 +126,17 @@ const handleConnection = (io) => (socket) => {
                 return socket.emit('message', `Vehicle ${vehicleNumber} was not found in the assigned list.`);
             }
     
-            // Find the latest active route for the vehicle that is not ended
             const latestRoute = await Route.findOne({
                 vehicleNumber,
-                status: { $ne: 'ended' }  // Only select routes that are not ended
+                status: { $ne: 'ended' }
             }).sort({ assignmentTime: -1 });
     
-            // Check if the latest route is found
             if (latestRoute) {
                 latestRoute.status = 'ended';  // Update status to 'ended'
                 await latestRoute.save();
                 console.log(`Route for vehicle ${vehicleNumber} has been marked as ended.`);
                 io.to(roomName).emit('message', `Route has ended for vehicle ${vehicleNumber}. The vehicle has left the room.`);
+                io.to(roomName).emit('statusUpdate', latestRoute.status); // Emit final status update
             } else {
                 console.log(`No active route found for vehicle ${vehicleNumber} that is not ended.`);
                 return socket.emit('message', `No active route found for vehicle ${vehicleNumber} that is not ended.`);

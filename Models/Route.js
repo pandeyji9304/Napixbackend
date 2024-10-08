@@ -25,7 +25,8 @@ const RouteSchema = new mongoose.Schema({
         timestamp: { 
             type: Date, 
             default: Date.now 
-        }
+        },
+        isRead: { type: Boolean, default: false }
     }],
     logisticsHead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 });

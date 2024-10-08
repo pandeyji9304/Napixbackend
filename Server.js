@@ -14,6 +14,7 @@ const authRoutes = require('./Routes/authroutes');
 const socketEvents = require('./Utils/Socketmiddleware');
 const upload = require('./Config/uploadConfig');
 require('dotenv').config();
+const bodyParser = require('body-parser');
 
 const app = express();
 const server = http.createServer(app);
@@ -41,6 +42,9 @@ app.use(cors({
 app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(bodyParser.json({ limit: '10mb' })); // Increase to 10MB or whatever size is suitable
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 // Test API
 app.get('/', (req, res) => {
