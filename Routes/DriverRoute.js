@@ -148,7 +148,7 @@ router.get('/driverdetail', authenticateDriver, async (req, res) => {
             mobileNumber: driver.mobileNumber,
             email: driver.email,
             role: driver.role, // Include the role if necessary
-            image: driver.profileImage // Ensure this matches your SwiftUI model
+            image: driver.image // Ensure this matches your SwiftUI model
         });
     } catch (err) {
         console.error('Error fetching driver details:', err);
