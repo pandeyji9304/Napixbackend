@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../Models/User');
 const Driver = require('../Models/Driver');
-const { comparePassword } = require('../Utils/password');
+const {hashPassword, comparePassword } = require('../Utils/password');
 const jwt = require('jsonwebtoken');
 
 // Login
@@ -45,28 +45,5 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
-// Change Password
-router.post('/change-password', async (req, res) => {
-  const { email, oldPassword, newPassword } = req.body;
-
-  try {
-    let user = await Driver.findOne({ email });
-    if (!user) user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-
-    const match = await comparePassword(oldPassword, user.password);
-    if (!match) return res.status(401).json({ error: 'Old password is incorrect' });
-
-    const hashedNewPassword = await hashPassword(newPassword);
-    user.password = hashedNewPassword;
-    user.passwordResetRequired = false;
-    await user.save();
-
-    res.status(200).json({ message: 'Password changed successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 module.exports = router;
