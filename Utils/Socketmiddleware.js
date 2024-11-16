@@ -65,39 +65,57 @@ const handleConnection = (io) => (socket) => {
         }
     });
     
-    
     socket.on('sendMessage', async (vehicleNumber, message) => {
         try {
             const roomName = `${vehicleNumber}-${socket.user.email}`;
+            
             if (!socket.rooms.has(roomName)) {
                 return socket.emit('message', 'You are not allowed to send messages from this room.');
             }
-
-            const latestRoute = await Route.findOne({ vehicleNumber, status: { $ne: 'ended' } }).sort({ assignmentTime: -1 });
-            if (!latestRoute) {
+    
+            console.log(`Sending message to room: ${roomName}`);
+    
+            // Fetch the specific route using routeId, vehicleNumber, and ensure the route is not 'ended'
+            const route = await Route.findOne({ vehicleNumber, status: { $ne: 'ended' } });
+    
+            if (!route) {
                 return socket.emit('message', 'No active route found for this vehicle.');
             }
-
-            latestRoute.messages.push({ message, timestamp: new Date() });
-
-            // Update status based on the message
-            if (latestRoute.status !== 'active alerts' && message.startsWith('D')) {
-                latestRoute.status = 'active alerts';
-            } else if (latestRoute.status !== 'driving safely') {
-                latestRoute.status = 'driving safely';
+    
+            // Add the message to the route's messages array
+            route.messages.push({ message, timestamp: new Date() });
+    
+            // Check if the message starts with 'D' and the route status is 'Driving safely'
+            if (message.startsWith('D') && route.status === 'Driving safely') {
+                // Update the status to 'active alerts' only if it's not already in that state
+                route.status = 'active alerts';
+                await route.save(); // Save the updated route
+                
+                // Emit status update for this specific route
+                io.to(roomName).emit('statusUpdate', route.status);
             }
-
-            await latestRoute.save();
-
-            // Emit status update
-            io.to(roomName).emit('statusUpdate', latestRoute.status);
+    
+            // Ensure the status remains 'active alerts' once it's set, preventing reversion
+        if (route.status === 'active alerts') {
+            io.to(roomName).emit('statusUpdate', route.status); // Emit current status
+        }
+    
+            // Save the updated route after the message is added
+            await route.save();
+    
+            // Emit the message to the correct room
             io.to(roomName).emit('message', message);
+    
+            // Notify logistics heads
             notifyLogisticsHeads(io, vehicleNumber, message);
+    
         } catch (error) {
             console.error('Error handling sendMessage:', error);
             socket.emit('message', 'An error occurred while sending the message.');
         }
     });
+    
+    
     
     
     socket.on('getMessages', async (vehicleNumber) => {
@@ -159,30 +177,12 @@ const handleConnection = (io) => (socket) => {
         });
         console.log(`Client disconnected: ${socket.id}`);
     });
-    setInterval(async () => {
-        // Find and update routes from 'scheduled' to 'driving safely'
-        const scheduledRoutes = await Route.find({ status: 'scheduled' });
-        for (const route of scheduledRoutes) {
-            route.status = 'driving safely';
-            await route.save();
-            io.to(`${route.vehicleNumber}-${route.driverEmail}`).emit('statusUpdate', route.status);
-        }
-
-        // Find and update routes from 'driving safely' to 'active alerts'
-        const drivingSafelyRoutes = await Route.find({ status: 'driving safely' });
-        for (const route of drivingSafelyRoutes) {
-            // You might want to put a condition here to check when to change the status
-            route.status = 'active alerts';
-            await route.save();
-            io.to(`${route.vehicleNumber}-${route.driverEmail}`).emit('statusUpdate', route.status);
-        }
-    }, 60000); //
 };
 
 const notifyLogisticsHeads = (io, vehicleNumber, message) => {
     io.sockets.sockets.forEach(client => {
         if (client.user && client.user.role === 'logistics_head') {
-            client.emit('message', `${vehicleNumber}: ${message}`);
+            client.emit('message', `New message for truck ${vehicleNumber}: ${message}`);
         }
     });
 };

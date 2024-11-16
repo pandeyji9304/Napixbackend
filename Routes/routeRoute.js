@@ -10,8 +10,75 @@ const mongoose = require('mongoose');
 // Middleware to check if the user is a logistics head
 router.use(authenticateLogisticsHead);
 
+// router.post('/create-route', async (req, res) => {
+//     console.log("Create route hit");
+
+//     const { vehicleNumber, driverName, fromLocation, toLocation, departureDetails, initialMessage } = req.body;
+
+//     try {
+//         // Ensure that the driver exists
+//         const driver = await Driver.findOne({ name: driverName });
+//         if (!driver) {
+//             return res.status(404).json({ error: 'Driver not found' });
+//         }
+
+//         // Only logistics heads can create routes
+//         if (req.user.role !== 'logistics_head') {
+//             return res.status(403).json({ message: 'Only logistics heads can assign trucks' });
+//         }
+
+//          // Check if there's already an active route for this vehicle (status not 'ended')
+//          const activeRoute = await Route.findOne({ vehicleNumber, status: { $ne: 'ended' } });
+//          if (activeRoute) {
+//              return res.status(400).json({ message: 'Cannot create a new route. An active route already exists for this vehicle.' });
+//          }
+
+//         // Create the route object, with the possibility of an initial message
+//         const newRoute = new Route({
+//             vehicleNumber,
+//             driverName,
+//             fromLocation,
+//             toLocation,
+//             departureDetails,
+//             messages: initialMessage ? [{ message: initialMessage }] : [],
+//             logisticsHead: req.user._id,
+//             driverEmail: driver.email // Include driver's email if needed
+//         });
+
+//         await newRoute.save();
+
+//         // Check if the truck is already assigned to the same driver (by vehicle number and driver email)
+//         let assignedTruck = await AssignedTrucks.findOne({ vehicleNumber, driverEmail: driver.email });
+//         if (!assignedTruck) {
+//             // If the vehicle number is not yet assigned to this driver (with the same email), create a new assignment
+//             assignedTruck = new AssignedTrucks({
+//                 vehicleNumber,
+//                 driverEmail: driver.email // Include driver's email in AssignedTrucks if needed
+//             });
+//             await assignedTruck.save();
+//         }
+
+//         // Notify the room associated with the vehicle number
+//         io.to(vehicleNumber).emit('routeCreated', {
+//             vehicleNumber,
+//             driverName,
+//             fromLocation,
+//             toLocation,
+//             departureDetails,
+//             initialMessage: initialMessage || '',
+//             status: 'success' // Include a success status
+//         });
+
+//         res.status(201).json({ message: 'Route added, truck assigned, and initial message stored', routeId: newRoute._id });
+//     } catch (err) {
+//         console.error('Error creating route:', err);
+//         res.status(400).json({ error: 'Failed to create route: ' + err.message });
+//     }
+// });
+
 router.post('/create-route', async (req, res) => {
     console.log("Create route hit");
+    console.log(req.body);
 
     const { vehicleNumber, driverName, fromLocation, toLocation, departureDetails, initialMessage } = req.body;
 
@@ -27,11 +94,11 @@ router.post('/create-route', async (req, res) => {
             return res.status(403).json({ message: 'Only logistics heads can assign trucks' });
         }
 
-         // Check if there's already an active route for this vehicle (status not 'ended')
-         const activeRoute = await Route.findOne({ vehicleNumber, status: { $ne: 'ended' } });
-         if (activeRoute) {
-             return res.status(400).json({ message: 'Cannot create a new route. An active route already exists for this vehicle.' });
-         }
+        // Check if there's already an active route for this vehicle (status not 'ended')
+        const activeRoute = await Route.findOne({ vehicleNumber, status: { $ne: 'ended' } });
+        if (activeRoute) {
+            return res.status(400).json({ message: 'Cannot create a new route. An active route already exists for this vehicle.' });
+        }
 
         // Create the route object, with the possibility of an initial message
         const newRoute = new Route({
@@ -58,24 +125,12 @@ router.post('/create-route', async (req, res) => {
             await assignedTruck.save();
         }
 
-        // Notify the room associated with the vehicle number
-        io.to(vehicleNumber).emit('routeCreated', {
-            vehicleNumber,
-            driverName,
-            fromLocation,
-            toLocation,
-            departureDetails,
-            initialMessage: initialMessage || '',
-            status: 'success' // Include a success status
-        });
-
         res.status(201).json({ message: 'Route added, truck assigned, and initial message stored', routeId: newRoute._id });
     } catch (err) {
         console.error('Error creating route:', err);
         res.status(400).json({ error: 'Failed to create route: ' + err.message });
     }
 });
-
 
 // DELETE route endpoint
 router.delete('/delete-route/:routeId', async (req, res) => {

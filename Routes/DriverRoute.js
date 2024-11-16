@@ -11,15 +11,67 @@ const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 const { authenticateDriver } = require('../Utils/authmiddleware');
 
 // Add Driver
-router.post('/add-driver', upload.single('profileImage'),[
+
+// router.post('/add-driver', upload.single('profileImage'),[
+//     body('email').isEmail().withMessage('Invalid email address'), // Validate email
+//     body('mobileNumber').isNumeric().isLength({ min: 10, max: 10 }).withMessage('Mobile number must be 10 digits'), // Validate mobile number
+//     body('name').notEmpty().withMessage('Name is required') // Validate name
+// ],  authenticateLogisticsHead, async (req, res) => {
+//     const { name, mobileNumber, email } = req.body;
+
+//     try {
+//         // Generate a passwor d and hash it
+//         const password = generatePassword();
+//         const hashedPassword = await hashPassword(password);
+
+//         // Create a new driver instance
+//         const newDriver = new Driver({
+//             name,
+//             mobileNumber,
+//             email,
+//             password: hashedPassword,
+//             assignedBy: req.user._id,
+//             profileImage: req.file ? req.file.path : null // Set the image if uploaded
+//         });
+
+//         // Attempt to send an email with the credentials
+//         try {
+//             await sendEmail(email, 'Your Napix Login Credentials', `Your password is: ${password}`);
+//             console.log('Email sent successfully');
+
+//             // Save the driver to the database only if the email is sent successfully
+//             await newDriver.save();
+
+//             // Respond to the client
+//             return res.status(201).json({ message: 'Driver added' });
+//         } catch (emailError) {
+//             console.error('Failed to send email:', emailError.message);
+//             // Respond with an error message indicating the email sending failure
+//             return res.status(500).json({ error: 'Driver not added. Failed to send email.' });
+//         }
+
+//     } catch (err) {
+//         res.status(400).json({ error: err.message });
+//     }
+// });
+
+
+
+router.post('/add-driver', upload.single('profileImage'), [
     body('email').isEmail().withMessage('Invalid email address'), // Validate email
     body('mobileNumber').isNumeric().isLength({ min: 10, max: 10 }).withMessage('Mobile number must be 10 digits'), // Validate mobile number
     body('name').notEmpty().withMessage('Name is required') // Validate name
-],  authenticateLogisticsHead, async (req, res) => {
+], authenticateLogisticsHead, async (req, res) => {
     const { name, mobileNumber, email } = req.body;
 
     try {
-        // Generate a passwor d and hash it
+        // Check if the email already exists in the database
+        const existingDriver = await Driver.findOne({ email });
+        if (existingDriver) {
+            return res.status(400).json({ message: 'Email already exists' });
+        }
+
+        // Generate a password and hash it
         const password = generatePassword();
         const hashedPassword = await hashPassword(password);
 
@@ -55,15 +107,12 @@ router.post('/add-driver', upload.single('profileImage'),[
 });
 
 
-
-
-
-router.delete('/delete-driver/:email', authenticateLogisticsHead, async (req, res) => {
-    const { email } = req.params;
+router.delete('/delete-driver/:id', authenticateLogisticsHead, async (req, res) => {
+    const { id } = req.params;
 
     try {
-        // Find the driver by email and delete
-        const deletedDriver = await Driver.findOneAndDelete({ email });
+        // Find the driver by _id and delete
+        const deletedDriver = await Driver.findOneAndDelete({ _id: id });
 
         if (!deletedDriver) {
             return res.status(404).json({ message: 'Driver not found' });
@@ -79,6 +128,7 @@ router.delete('/delete-driver/:email', authenticateLogisticsHead, async (req, re
         res.status(500).json({ error: 'Failed to delete driver' });
     }
 });
+
 
 router.put('/update-profile', authenticateDriver, async (req, res) => {
     console.log("Updating driver profile...");
