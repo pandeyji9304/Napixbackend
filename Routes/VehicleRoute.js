@@ -7,7 +7,7 @@ const User =  require('../Models/User')
 
 // Add Vehicle
 router.post('/add', authenticateLogisticsHead, async (req, res) => {
-    console.log('Vehicle route hit');
+    // console.log('Vehicle route hit');
     const { vehicleNumber } = req.body;
     try {
         const newVehicle = new Vehicle({ vehicleNumber, assignedBy: req.user._id }); // Assign vehicle to the logged-in user
@@ -50,7 +50,7 @@ router.delete('/delete/:vehicleNumber', authenticateLogisticsHead, async (req, r
 
 // Route to get all vehicles
 router.get('/getvehicles', authenticateLogisticsHead, async (req, res) => {
-    console.log("get vehicle route hit");
+    // console.log("get vehicle route hit");
     try {
         // Ensure the user is a logistics head
         if (req.user.role !== 'logistics_head') {
@@ -80,7 +80,7 @@ router.get('/messages/:vehicleNumber', async (req, res) => {
             res.status(404).json({ message: 'No route found for this vehicle.' });
         }
     } catch (error) {
-        console.error('Error retrieving messages:', error);
+        // console.error('Error retrieving messages:', error);
         res.status(400).json({ error: error.message });
     }
 });

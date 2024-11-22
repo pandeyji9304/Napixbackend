@@ -10,8 +10,8 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-console.log('Email User:', process.env.EMAIL_USER);
-console.log('Email Pass:', process.env.EMAIL_PASS ? 'Loaded' : 'Not Loaded');
+// console.log('Email User:', process.env.EMAIL_USER);
+// console.log('Email Pass:', process.env.EMAIL_PASS ? 'Loaded' : 'Not Loaded');
 
 
 // Function to send email
@@ -23,7 +23,14 @@ const sendEmail = (to, subject, text) => {
         text,
     };
 
-    return transporter.sendMail(mailOptions);
+    // return transporter.sendMail(mailOptions);
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+            console.error("Error sending email:", err);
+            return;
+        }
+        console.log("Email sent:", info.response);
+    });
 };
 
 module.exports = sendEmail;

@@ -96,16 +96,16 @@ const authenticateLogisticsHead = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decoded);
+    // console.log(decoded);
 
     const logisticsHeadId = new mongoose.Types.ObjectId(decoded._id);
 
      
-    console.log('Decoded Token for Logistics Head:', decoded);
+    // console.log('Decoded Token for Logistics Head:', decoded);
 
     const logisticsHead = await LogisticsUser.findById(logisticsHeadId);
     if (!logisticsHead) {
-      console.error('Logistics Head not found with ID:', logisticsHeadId);
+      // console.error('Logistics Head not found with ID:', logisticsHeadId);
       return res.status(404).json({ error: 'Logistics head not found' });
     }
 
@@ -118,18 +118,18 @@ const authenticateLogisticsHead = async (req, res, next) => {
     req.email = decoded.email;  // Use decoded email if needed
     next();
   } catch (error) {
-    console.error('Token verification error for logistics head:', error);
+    // console.error('Token verification error for logistics head:', error);
     return res.status(401).json({ error: 'Invalid token' });
   }
 };
 
 // Middleware to authenticate driver
 const authenticateDriver = async (req, res, next) => {
-  console.log("this is token ")
-  console.log(req.header('Authorization'))
+  // console.log("this is token ")
+  // console.log(req.header('Authorization'))
   const token = req.header('Authorization')?.replace('Bearer ', '');
-  console.log("this is stupidity")
-   console.log(token)
+  // console.log("this is stupidity")
+  //  console.log(token)
   if (!token) {
     return res.status(401).json({ error: 'Authorization token missing' });
   }
@@ -138,12 +138,12 @@ const authenticateDriver = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const driverId = new mongoose.Types.ObjectId(decoded._id);
     
-    console.log('Decoded Token for Driver:', decoded);
-    console.log('Driver Email from Token:', decoded.email);
+    // console.log('Decoded Token for Driver:', decoded);
+    // console.log('Driver Email from Token:', decoded.email);
 
     const driver = await Driver.findById(driverId);
     if (!driver) {
-      console.error('Driver not found with ID:', driverId);
+      // console.error('Driver not found with ID:', driverId);
       return res.status(404).json({ error: 'Driver not found' });
     }
 
@@ -152,7 +152,7 @@ const authenticateDriver = async (req, res, next) => {
     req.email = decoded.email;  // Use decoded email if needed
     next();
   } catch (error) {
-    console.error('Authentication error for driver:', error);
+    // console.error('Authentication error for driver:', error);
     res.status(401).json({ error: 'Authentication failed' });
   }
 };

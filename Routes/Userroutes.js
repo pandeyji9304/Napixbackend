@@ -184,7 +184,7 @@ router.post('/signup/logistics-head', [
             role: newUser.role
         });
     } catch (err) {
-        console.error("Error occurred:", err);
+        // console.error("Error occurred:", err);
         res.status(400).json({ error: err.message });
     }
 });
@@ -210,7 +210,7 @@ router.put('/edit-user/:id', authenticateLogisticsHead, async (req, res) => {
         res.status(200).json({ message: 'User details updated successfully', user: updatedUser });
 
     } catch (err) {
-        console.error(err); // Log the error for debugging
+        // console.error(err); // Log the error for debugging
         res.status(400).json({ error: err.message });
     }
 });
@@ -223,20 +223,20 @@ router.get('/profile', authenticateLogisticsHead, async (req, res) => {
         return res.status(401).json({ success: false, message: 'Unauthorized access' });
     }
 
-    console.log('User ID:', req.user._id);
+    // console.log('User ID:', req.user._id);
 
     try {
         const user = await User.findById(req.user._id);
 
         if (!user) {
-            console.log(`No user found for ID: ${req.user._id} from request made by ${req.ip}`);
+            // console.log(`No user found for ID: ${req.user._id} from request made by ${req.ip}`);
             return res.status(404).json({ success: false, message: 'Profile not found' });
         }
 
         // Remove sensitive information
         const { password, ...userDetails } = user.toObject();
 
-        console.log('User data fetched:', userDetails);
+        // console.log('User data fetched:', userDetails);
 
         res.status(200).json({
             success: true,
@@ -248,7 +248,7 @@ router.get('/profile', authenticateLogisticsHead, async (req, res) => {
             companyName: userDetails.companyName,
         });
     } catch (err) {
-        console.error('Error fetching user with ID:', req.user._id, 'Error:', err);
+        // console.error('Error fetching user with ID:', req.user._id, 'Error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
@@ -350,8 +350,9 @@ router.get('/profile', authenticateLogisticsHead, async (req, res) => {
 // });
 
 router.put('/update-profile', authenticateLogisticsHead, async (req, res) => {
-    console.log("welcome")
-        console.log(req.body)
+    // console.log("welcome")
+    //     console.log(req.body)
+    console.log("this update for logistivcs hits")
     const { name, mobileNumber, email, companyName, profileImage } = req.body; // Include profileImage in req.body
 
     try {
@@ -368,19 +369,19 @@ router.put('/update-profile', authenticateLogisticsHead, async (req, res) => {
         logisticsUser.email = email || logisticsUser.email;
         logisticsUser.companyName = companyName || logisticsUser.companyName;
         logisticsUser.profileImage = req.body.image || logisticsUser.profileImage; // Update the profile image URL
-        console.log("this is image")
-        console.log(logisticsUser.profileImage)
-        console.log("hey")
+        // console.log("this is image")
+        // console.log(logisticsUser.profileImage)
+        // console.log("hey")
         
                if(req.body.image){
                 logisticsUser.image = req.body.image;
                }
-                console.log(req.body.image)
+                // console.log(req.body.image)
         await logisticsUser.save();
 
         res.status(200).json({ message: "Profile updated successfully." });
     } catch (error) {
-        console.error(error);
+        // console.error(error);
         res.status(500).json({ error: "Server error: Could not update profile." });
     }
 });
@@ -401,7 +402,7 @@ router.put("/updateLogisticProfile", async (req, res) => {
   
       res.json(driver); // Send the updated driver profile as response
     } catch (error) {
-      console.error("Error updating profile image:", error);
+    //   console.error("Error updating profile image:", error);
       res.status(500).json({ message: "Server error" });
     }
   });
@@ -417,7 +418,7 @@ router.put('/update-password', authenticateLogisticsHead, async (req, res) => {
         }
 
         // Retrieve the logistics head ID from the authenticated request
-        console.log(req.user);
+        // console.log(req.user);
         const logisticsHeadId = req.user._id;  // Use req.user._id, as set by the middleware
         const logisticsHead = await User.findById(logisticsHeadId);
 
@@ -445,7 +446,7 @@ router.put('/update-password', authenticateLogisticsHead, async (req, res) => {
             logisticsHeadId: logisticsHead._id
         });
     } catch (err) {
-        console.error('Error updating password:', err);
+        // console.error('Error updating password:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -499,52 +500,52 @@ router.post('/forgot-password', async (req, res) => {
         };
 
         // Send the email
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending email:', error);
-                return res.status(500).json({ error: 'Error sending email' });
+        transporter.sendMail(mailOptions, (err, info) => {
+            if (err) {
+                console.error("Error sending email:", err); // Detailed error logging
+                return res.status(500).json({ message: "Failed to send reset email.", error: err });
             }
-            console.log('Email sent:', info.response);
-            res.status(200).json({ message: 'Password reset email sent successfully' });
+            console.log("Email sent:", info.response); // Log success response
+            res.status(200).json({ message: "Reset link sent." });
         });
-
+        
     } catch (error) {
-        console.error(error);
+        // console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
 });
 // Route for rendering the reset password form
 
-router.put('/reset-password', async (req, res) => {
-    const resetToken = req.body.resetToken;
-    const newPassword= req.body.newPassword;
+// router.put('/reset-password', async (req, res) => {
+//     const resetToken = req.body.resetToken;
+//     const newPassword= req.body.newPassword;
 
-    // Hash the token to compare with the stored hashed token
-    // const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-  console.log("heyyy i dont love you ")
-  console.log(newPassword)
-  console.log("heyyy i love you ")
+//     // Hash the token to compare with the stored hashed token
+//     // const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+// //   console.log("heyyy i dont love you ")
+// //   console.log(newPassword)
+// //   console.log("heyyy i love you ")
 
-  console.log(resetToken)
+//   console.log(resetToken)
 
-    try {
-        // Find the user by the reset token and check if the token has not expired
-        const user = await User.findOne({
-            passwordResetToken: resetToken,
-            // passwordResetExpires: { $gt: Date.now() }, // Check if the token is still valid (not expired)
-        });
-        console.log(user)
-        if (!user) {
-            return res.status(400).json({ error: 'Token is invalid or has expired' });
-        }
-        user.password = newPassword;
-        await user.save();
-        res.status(200).json({ message: 'Password reset successfull. now gand marao' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
-    }
-});
+//     try {
+//         // Find the user by the reset token and check if the token has not expired
+//         const user = await User.findOne({
+//             passwordResetToken: resetToken,
+//             // passwordResetExpires: { $gt: Date.now() }, // Check if the token is still valid (not expired)
+//         });
+//         // console.log(user)
+//         if (!user) {
+//             return res.status(400).json({ error: 'Token is invalid or has expired' });
+//         }
+//         user.password = newPassword;
+//         await user.save();
+//         res.status(200).json({ message: 'Password reset successfull. now gand marao' });
+//     } catch (error) {
+//         // console.error(error);
+//         res.status(500).json({ error: 'Server error' });
+//     }
+// });
 
 // Route for actually resetting the password
 
@@ -647,32 +648,73 @@ router.post("/reset-password", async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour expiration
    
     await user.save();
-    console.log("this is token with user", user)
+    // console.log("this is token with user", user)
 
     // Send email with reset link
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
-            user: "famousedit9304@gmail.com",
-            pass: "fkgpgnavvpycxilt",
+            user: "sunidhiratra21@gmail.com",
+            // pass: "fkgpgnavvpycxilt",
+           pass: "odfwpgyshpwdcbvh"
+
         },
     });
    console.log("this is tooken thrpugh email", resetToken)
-    const resetUrl = `http://localhost:5001/api/users/reset-password/${resetToken}`;
+    const resetUrl = `https://napixbackend30.onrender.com/api/users/reset-password/${resetToken}`;
 
     const mailOptions = {
         to: user.email,
-        from: "famousedit9304@gmail.com",
+        from:"sunidhiratra21@gmail.com",
         subject: "Password Reset Request",
         text: `You are receiving this email because you (or someone else) have requested a password reset. Please click the following link to reset your password: ${resetUrl}`,
     };
+    console.log("Sending email to:", user.email);
 
-    transporter.sendMail(mailOptions, (err) => {
+
+    // transporter.sendMail(mailOptions, (err) => {
+    //     if (err) {
+    //         return res.status(500).json({ message: "Failed to send reset email." });
+    //         console.log("error in sending mail")
+    //     }
+    //     res.status(200).json({ message: "Reset link sent." });
+    //     console.log(" sent mail")
+
+    // });
+    // transporter.sendMail(mailOptions, (err, info) => {
+       
+    //     if (err) {
+    //         console.error("Error sending email:", err); // Detailed error logging
+    //         return res.status(500).json({ message: "Failed to send reset email.", error: err });
+    //     }
+    //     res.status(200).json({ message: "Reset link sent." });
+    //     console.log("Email sent:", info.response); // Log success response
+
+
+    // });
+    transporter.sendMail(mailOptions, (err, info) => {
         if (err) {
-            return res.status(500).json({ message: "Failed to send reset email." });
+            console.error("Error sending email:", err); // Log error details
+            return res.status(500).json({
+                message: "Failed to send reset email.",
+                error: err.message, // Include error message
+                stack: err.stack,  // Include error stack for more context
+            });
         }
-        res.status(200).json({ message: "Reset link sent." });
+    
+        console.log("Transporter configuration:");
+        console.log(transporter.options);
+    
+        console.log("Mail Options:");
+        console.log(mailOptions);
+    
+        console.log("Email successfully sent:");
+        console.log(info);
+    
+        res.status(200).json({ message: `Reset link sent to ${mailOptions.to}.` });
     });
+    
+    
 });
 
 
@@ -682,7 +724,7 @@ router.get("/reset-password/:token" , async (req,res)=>{
         resetPasswordToken: token
     })
     if(!user){
-        console.log("there is no token")
+        // console.log("there is no token")
         res.send("inivalid token")
         return 
     }
@@ -694,23 +736,23 @@ router.post("/reset-password/:token", async (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
 
-    console.log("This is body:", req.body);
-    console.log("Received token:", token);
-    console.log("Received password:", password);
+    // console.log("This is body:", req.body);
+    // console.log("Received token:", token);
+    // console.log("Received password:", password);
 
     // Find the user with matching token
     const user = await User.findOne({
         resetPasswordToken: token 
     });
 
-    console.log("This is user:", user);
+    // console.log("This is user:", user);
 
     if (!user) {
-        console.log("No user found or token expired"); // Log when no user is found
+        // console.log("No user found or token expired"); // Log when no user is found
         return res.status(400).json({ message: "Invalid or expired token." });
     }
 
-    console.log("User found:", user); // Log the user found in the database
+    // console.log("User found:", user); // Log the user found in the database
 
     // Hash the new password before saving
     user.password = bcrypt.hashSync(password, 10);
@@ -720,7 +762,7 @@ router.post("/reset-password/:token", async (req, res) => {
 
     await user.save();
 
-    console.log("Password reset successful for user:", user.email); // Log after successful password reset
+    // console.log("Password reset successful for user:", user.email); // Log after successful password reset
     res.status(200).json({ message: "Password reset successful." });
 });
 
