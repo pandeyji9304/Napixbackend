@@ -124,15 +124,15 @@ router.delete('/delete-driver/:id', authenticateLogisticsHead, async (req, res) 
         res.status(200).json({ message: 'Driver deleted successfully' });
 
     } catch (err) {
-        console.error(err); // Log the error for debugging
+        // console.error(err); // Log the error for debugging
         res.status(500).json({ error: 'Failed to delete driver' });
     }
 });
 
 
 router.put('/update-profile', authenticateDriver, async (req, res) => {
-    console.log("Updating driver profile...");
-    console.log(req.body)
+    // console.log("Updating driver profile...");
+    // console.log(req.body)
     const { name, mobileNumber, email, profileImage } = req.body;
 
     try {
@@ -157,13 +157,13 @@ router.put('/update-profile', authenticateDriver, async (req, res) => {
 
         driver.email = email|| driver.email;
         driver.profileImage = req.body.image || driver.profileImage
-        console.log("this is driver image")
-        console.log(driver.profileImage)
-        console.log("hey this is updated  driver image")
+        // console.log("this is driver image")
+        // console.log(driver.profileImage)
+        // console.log("hey this is updated  driver image")
         if(req.body.image){
             driver.image = req.body.image;
         }
-        console.log(req.body.image)
+        // console.log(req.body.image)
         // Save the updated driver
         const updatedDriver = await driver.save();
 
@@ -179,7 +179,7 @@ router.put('/update-profile', authenticateDriver, async (req, res) => {
             }
         });
     } catch (err) {
-        console.error("Update Profile Error: ", err);
+        // console.error("Update Profile Error: ", err);
         res.status(500).json({ error: 'An error occurred while updating the profile.' });
     }
 });
@@ -246,7 +246,7 @@ router.put('/update-profile', authenticateDriver, async (req, res) => {
         }
 
         // Find the driver using the authenticated driver's ID
-        console.log(req.driver._id);
+        // console.log(req.driver._id);
         const driver = await Driver.findById(req.driver._id);
         
 
@@ -269,7 +269,7 @@ router.put('/update-profile', authenticateDriver, async (req, res) => {
 
         res.status(200).json({ message: 'Password updated successfully.' });
     } catch (err) {
-        console.error('Error updating password:', err);
+        // console.error('Error updating password:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -310,7 +310,7 @@ router.get('/driverdetail', authenticateDriver, async (req, res) => {
             image: driver.image // Ensure this matches your SwiftUI model
         });
     } catch (err) {
-        console.error('Error fetching driver details:', err);
+        // console.error('Error fetching driver details:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -328,7 +328,7 @@ router.get('/getdrivers', authenticateLogisticsHead, async (req, res) => {
         // Respond with the found drivers
         res.status(200).json(drivers);
     } catch (err) {
-        console.error('Error fetching drivers:', err);
+        // console.error('Error fetching drivers:', err);
         res.status(400).json({ error: err.message });
     }
 });
