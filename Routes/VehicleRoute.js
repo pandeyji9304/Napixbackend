@@ -14,8 +14,17 @@ router.post('/add', authenticateLogisticsHead, async (req, res) => {
         await newVehicle.save();
 
         res.status(201).json({ message: 'Vehicle added' });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
+    } catch (error) {
+        // res.status(400).json({ error: err.message });
+        if (error.code === 11000) {
+            // MongoDB duplicate key error
+            const duplicateKey = error.keyValue?.vehicleNumber || "unknown";
+            return res
+                .status(400)
+                .json({ error: `Same vehicle ${duplicateKey} already exists` });
+        }
+        return res.status(500).json({ error: "An unexpected error occurred" });
+
     }
 });
 
