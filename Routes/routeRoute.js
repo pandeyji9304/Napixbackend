@@ -125,7 +125,42 @@ router.post('/create-route', async (req, res) => {
             await assignedTruck.save();
         }
 
-        res.status(201).json({ message: 'Route added, truck assigned, and initial message stored', routeId: newRoute._id });
+        // Send an email to the driver
+        const transporter = nodemailer.createTransport({
+            service: 'gmail', // You can use any other email service
+            auth: {
+                user: 'famousedit9304@gmail.com', // Replace with your email
+                pass: 'fkgpgnavvpycxilt'   // Replace with your email password or app-specific password
+            }
+        });
+
+        const mailOptions = {
+            from: '"Logistics Team" <your-email@gmail.com>', // Sender address
+            to: driver.email, // Driver's email
+            subject: 'Vehicle Assignment Notification',
+            text: `Hello ${driverName},
+
+You have been assigned to the vehicle with number ${vehicleNumber} for the following route:
+
+From: ${fromLocation}
+To: ${toLocation}
+Departure Time: ${new Date(departureDetails.departureTime).toLocaleString()}
+
+Please ensure you are prepared for the journey. 
+
+Best Regards,
+Logistics Team`
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Error sending email:', error);
+                return res.status(500).json({ error: 'Route created, but failed to send email notification' });
+            }
+            console.log('Email sent:', info.response);
+        });
+
+        res.status(201).json({ message: 'Route added, truck assigned, email sent, and initial message stored', routeId: newRoute._id });
     } catch (err) {
         console.error('Error creating route:', err);
         res.status(400).json({ error: 'Failed to create route: ' + err.message });
