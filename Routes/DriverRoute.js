@@ -87,7 +87,25 @@ router.post('/add-driver', upload.single('profileImage'), [
 
         // Attempt to send an email with the credentials
         try {
-            await sendEmail(email, 'Your Napix Login Credentials', `Your password is: ${password}`);
+            await sendEmail(
+                email,
+                'Your Napix Login Credentials',
+                `
+                <html>
+                    <body>
+                        <h3>Hello ${name},</h3>
+                        <p>Welcome to Napix! Your account has been successfully created.</p>
+                        <p>Here are your login credentials:</p>
+                        <ul>
+                            <li><strong>Email:</strong> ${email}</li>
+                            <li><strong>Password:</strong> ${password}</li>
+                        </ul>
+                        <p>For security reasons, we recommend that you change your password after logging in for the first time.</p>
+                        <p>If you have any questions or need assistance, feel free to contact us.</p>
+                        <p>Best regards,<br/>The Napix Team</p>
+                    </body>
+                </html>`
+            );
             console.log('Email sent successfully');
 
             // Save the driver to the database only if the email is sent successfully
@@ -105,7 +123,6 @@ router.post('/add-driver', upload.single('profileImage'), [
         res.status(400).json({ error: err.message });
     }
 });
-
 
 router.delete('/delete-driver/:id', authenticateLogisticsHead, async (req, res) => {
     const { id } = req.params;
