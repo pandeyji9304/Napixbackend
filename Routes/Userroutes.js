@@ -654,9 +654,9 @@ router.post("/reset-password", async (req, res) => {
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
-            user: "famousedit9304@gmail.com",
+            user: process.env.EMAIL_USER,
             // pass: "fkgpgnavvpycxilt",
-           pass: "fkgpgnavvpycxilt"
+           pass: process.env.EMAIL_PASS
 
         },
     });
@@ -665,7 +665,7 @@ router.post("/reset-password", async (req, res) => {
 
     const mailOptions = {
         to: user.email,
-        from:"famousedit9304@gmail.com",
+        from:process.env.EMAIL_PASS,
         subject: "Password Reset Request",
         text: `You are receiving this email because you (or someone else) have requested a password reset. Please click the following link to reset your password: ${resetUrl}`,
     };

@@ -7,6 +7,7 @@ const Driver = require('../Models/Driver');
 const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 // Middleware to check if the user is a logistics head
 router.use(authenticateLogisticsHead);
@@ -130,13 +131,13 @@ router.post('/create-route', async (req, res) => {
         const transporter = nodemailer.createTransport({
             service: 'gmail', // You can use any other email service
             auth: {
-                user: 'famousedit9304@gmail.com', // Replace with your email
-                pass: 'fkgpgnavvpycxilt'   // Replace with your email password or app-specific password
+                user: process.env.EMAIL_USER, // Replace with your email
+                pass: process.env.EMAIL_PASS   // Replace with your email password or app-specific password
             }
         });
 
         const mailOptions = {
-            from: '"Logistics Team" <your-email@gmail.com>', // Sender address
+            from: '"Logistics Team"', // Sender address
             to: driver.email, // Driver's email
             subject: 'Vehicle Assignment Notification',
             text: `Hello ${driverName},
