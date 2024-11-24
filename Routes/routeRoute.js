@@ -6,6 +6,7 @@ const io = require('socket.io')(require('http').createServer());
 const Driver = require('../Models/Driver');
 const {authenticateLogisticsHead} = require('../Utils/authmiddleware');
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
 
 // Middleware to check if the user is a logistics head
 router.use(authenticateLogisticsHead);
