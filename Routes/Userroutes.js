@@ -475,7 +475,7 @@ router.post('/forgot-password', async (req, res) => {
 
         await user.save();
         // Create the reset password URL
-        const resetURL = `http://localhost:5001/api/users/reset-password/${resetToken}`;
+        const resetURL = `https://napixbackend-2.onrender.com/api/users/reset-password/${resetToken}`;
 
         // Setup Nodemailer to send the reset email
         const transporter = nodemailer.createTransport({
@@ -661,13 +661,14 @@ router.post("/reset-password", async (req, res) => {
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
+            user: "famousedit9304@gmail.com",
+            // pass: "fkgpgnavvpycxilt",
+           pass: "fkgpgnavvpycxilt"
 
         },
     });
    console.log("this is tooken thrpugh email", resetToken)
-    const resetUrl = `http://localhost:5001/api/users/reset-password/${resetToken}`;
+    const resetUrl = `https://napixbackend-2.onrender.com/api/users/reset-password/${resetToken}`;
 
     const mailOptions = {
         to: user.email,
