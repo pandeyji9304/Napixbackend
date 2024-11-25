@@ -663,14 +663,13 @@ router.post("/reset-password", async (req, res) => {
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
-            user: "famousedit9304@gmail.com",
-            // pass: "fkgpgnavvpycxilt",
-           pass: "fkgpgnavvpycxilt"
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
 
         },
     });
    console.log("this is tooken thrpugh email", resetToken)
-    const resetUrl = `http://localhost:5001/api/users/reset-password/${resetToken}`;
+    const resetUrl = `https://napixbackend-2.onrender.com/api/users/reset-password/${resetToken}`;
 
     const mailOptions = {
         to: user.email,
