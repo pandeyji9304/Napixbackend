@@ -653,7 +653,6 @@ router.post("/reset-password", async (req, res) => {
     // Generate reset token
     const resetToken = crypto.randomBytes(20).toString("hex");
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour expiration
    
     await user.save();
     // console.log("this is token with user", user)
@@ -662,14 +661,13 @@ router.post("/reset-password", async (req, res) => {
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
-            user: "famousedit9304@gmail.com",
-            // pass: "fkgpgnavvpycxilt",
-           pass: "fkgpgnavvpycxilt"
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
 
         },
     });
    console.log("this is tooken thrpugh email", resetToken)
-    const resetUrl = `https://napixbackend30.onrender.com/api/users/reset-password/${resetToken}`;
+    const resetUrl = `http://localhost:5001/api/users/reset-password/${resetToken}`;
 
     const mailOptions = {
         to: user.email,
@@ -728,10 +726,15 @@ router.post("/reset-password", async (req, res) => {
 
 router.get("/reset-password/:token" , async (req,res)=>{
     const{token} = req.params
-    const user = await User.findOne({
+    let user = await User.findOne({
         resetPasswordToken: token
     })
-    if(!user){
+      
+     if (!user) {
+        // If not found in User, search in Driver
+        user = await Driver.findOne({  resetPasswordToken: token });
+    }
+    else if(!user){
         // console.log("there is no token")
         res.send("inivalid token")
         return 
@@ -749,9 +752,12 @@ router.post("/reset-password/:token", async (req, res) => {
     // console.log("Received password:", password);
 
     // Find the user with matching token
-    const user = await User.findOne({
+    let user = await User.findOne({
         resetPasswordToken: token 
-    });
+    }) || await Driver.findOne({
+        resetPasswordToken: token 
+
+    })
 
     // console.log("This is user:", user);
 
