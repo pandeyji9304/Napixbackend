@@ -636,8 +636,16 @@ router.post('/forgot-password', async (req, res) => {
 
 router.post("/reset-password", async (req, res) => {
     const { email } = req.body;
+
+    let user = await User.findOne({ email });
+    let isDriver = false; // Flag to track if the user is a driver
     
-    const user = await User.findOne({ email });
+    if (!user) {
+        // If not found in User, search in Driver
+        user = await Driver.findOne({ email });
+        isDriver = true;
+    }
+
     if (!user) {
         return res.status(400).json({ message: "No account found with that email." });
     }
@@ -654,9 +662,9 @@ router.post("/reset-password", async (req, res) => {
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
-            user: process.env.EMAIL_USER,
+            user: "famousedit9304@gmail.com",
             // pass: "fkgpgnavvpycxilt",
-           pass: process.env.EMAIL_PASS
+           pass: "fkgpgnavvpycxilt"
 
         },
     });
@@ -665,7 +673,7 @@ router.post("/reset-password", async (req, res) => {
 
     const mailOptions = {
         to: user.email,
-        from:process.env.EMAIL_PASS,
+        from:"famousedit9304@gmail.com",
         subject: "Password Reset Request",
         text: `You are receiving this email because you (or someone else) have requested a password reset. Please click the following link to reset your password: ${resetUrl}`,
     };
