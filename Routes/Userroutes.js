@@ -2,6 +2,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
+const Driver = require('../Models/Driver');
+
 const User = require('../Models/User');
 const { hashPassword } = require('../Utils/password');
 const router = express.Router();
@@ -475,7 +477,7 @@ router.post('/forgot-password', async (req, res) => {
 
         await user.save();
         // Create the reset password URL
-        const resetURL = `https://napixbackend-2.onrender.com/api/users/reset-password/${resetToken}`;
+        const resetURL = `http://localhost:5001/api/users/reset-password/${resetToken}`;
 
         // Setup Nodemailer to send the reset email
         const transporter = nodemailer.createTransport({
@@ -668,7 +670,7 @@ router.post("/reset-password", async (req, res) => {
         },
     });
    console.log("this is tooken thrpugh email", resetToken)
-    const resetUrl = `https://napixbackend-2.onrender.com/api/users/reset-password/${resetToken}`;
+    const resetUrl = `http://localhost:5001/api/users/reset-password/${resetToken}`;
 
     const mailOptions = {
         to: user.email,
