@@ -247,6 +247,9 @@ router.put('/edit-route/:id', async (req, res) => {
             return res.status(404).json({ error: 'Route not found' });
         }
 
+        const previousVehicleNumber = existingRoute.vehicleNumber;
+        const previousDriverEmail = (await Driver.findOne({ name: existingRoute.driverName }))?.email;
+
         // Update the route details
         existingRoute.vehicleNumber = vehicleNumber || existingRoute.vehicleNumber;
         existingRoute.driverName = driverName || existingRoute.driverName;
@@ -262,12 +265,18 @@ router.put('/edit-route/:id', async (req, res) => {
         // Save the updated route
         await existingRoute.save();
 
-        // Find the assigned truck using both `vehicleNumber` and `driverEmail`
+        // If vehicleNumber or driverEmail has changed, delete the old assignment
+        if (previousVehicleNumber !== vehicleNumber || previousDriverEmail !== driver.email) {
+            await AssignedTrucks.deleteOne({ 
+                vehicleNumber: previousVehicleNumber, 
+                driverEmail: previousDriverEmail 
+            });
+        }
+
+        // Check if a new assignment already exists for the updated vehicleNumber and driverEmail
         let assignedTruck = await AssignedTrucks.findOne({ 
-            $or: [
-                { vehicleNumber: existingRoute.vehicleNumber }, 
-                { driverEmail: driver.email }
-            ] 
+            vehicleNumber, 
+            driverEmail: driver.email 
         });
 
         if (assignedTruck) {
@@ -278,7 +287,7 @@ router.put('/edit-route/:id', async (req, res) => {
         } else {
             // Create a new assignment if none matches
             assignedTruck = new AssignedTrucks({
-                vehicleNumber: existingRoute.vehicleNumber,
+                vehicleNumber,
                 driverEmail: driver.email
             });
             await assignedTruck.save();
@@ -301,6 +310,7 @@ router.put('/edit-route/:id', async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 });
+
 
 
 
