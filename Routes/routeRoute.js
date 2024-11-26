@@ -247,6 +247,10 @@ router.put('/edit-route/:id', async (req, res) => {
             return res.status(404).json({ error: 'Route not found' });
         }
 
+        // Store the previous vehicle number and driver email
+        const previousVehicleNumber = existingRoute.vehicleNumber;
+        const previousDriverEmail = existingRoute.driverEmail;
+
         // Update the route details
         existingRoute.vehicleNumber = vehicleNumber || existingRoute.vehicleNumber;
         existingRoute.driverName = driverName || existingRoute.driverName;
@@ -261,6 +265,23 @@ router.put('/edit-route/:id', async (req, res) => {
 
         // Save the updated route
         await existingRoute.save();
+
+        // Check if the assigned vehicle or driver has changed
+        if (vehicleNumber !== previousVehicleNumber || driver.email !== previousDriverEmail) {
+            // If the vehicle number or driver has changed, update the assignment
+            let assignedTruck = await AssignedTrucks.findOne({ vehicleNumber: previousVehicleNumber, driverEmail: previousDriverEmail });
+            if (assignedTruck) {
+                // Remove the old assignment
+                await assignedTruck.remove();
+            }
+
+            // Create a new assignment for the updated vehicle and driver
+            assignedTruck = new AssignedTrucks({
+                vehicleNumber,
+                driverEmail: driver.email
+            });
+            await assignedTruck.save();
+        }
 
         // Notify the room associated with the vehicle number
         io.to(vehicleNumber).emit('routeUpdated', {
