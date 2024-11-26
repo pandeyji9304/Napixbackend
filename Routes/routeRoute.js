@@ -226,17 +226,15 @@ router.get('/routes/:id/messages', async (req, res) => {
 });
 
 router.put('/edit-route/:id', async (req, res) => {
-    console.log("Edit route hit");
+    console.log("edit route hit");
 
     const { vehicleNumber, driverName, fromLocation, toLocation, departureDetails, updatedMessage } = req.body;
     const routeId = req.params.id;
 
     try {
-        // Ensure the driver exists
+        // Ensure that the driver exists
         const driver = await Driver.findOne({ name: driverName });
-        if (!driver) {
-            return res.status(404).json({ error: 'Driver not found' });
-        }
+        if (!driver) return res.status(404).json({ error: 'Driver not found' });
 
         // Only logistics heads can edit routes
         if (req.user.role !== 'logistics_head') {
@@ -248,10 +246,6 @@ router.put('/edit-route/:id', async (req, res) => {
         if (!existingRoute) {
             return res.status(404).json({ error: 'Route not found' });
         }
-
-        // Store the previous vehicle number and driver email
-        const previousVehicleNumber = existingRoute.vehicleNumber;
-        const previousDriverEmail = existingRoute.driverEmail;
 
         // Update the route details
         existingRoute.vehicleNumber = vehicleNumber || existingRoute.vehicleNumber;
@@ -268,33 +262,42 @@ router.put('/edit-route/:id', async (req, res) => {
         // Save the updated route
         await existingRoute.save();
 
-        // Update the assigned truck only if it exists
-        if (vehicleNumber !== previousVehicleNumber || driver.email !== previousDriverEmail) {
-            const updatedTruck = await AssignedTrucks.findOneAndUpdate(
-                { vehicleNumber: previousVehicleNumber, driverEmail: previousDriverEmail },
-                { vehicleNumber, driverEmail: driver.email },
-                { new: true } // Return the updated document
-            );
+        // Find the assigned truck using both `vehicleNumber` and `driverEmail`
+        let assignedTruck = await AssignedTrucks.findOne({ 
+            $or: [
+                { vehicleNumber: existingRoute.vehicleNumber }, 
+                { driverEmail: driver.email }
+            ] 
+        });
 
-            if (!updatedTruck) {
-                console.log("No assigned truck found to update. Skipping...");
-            }
+        if (assignedTruck) {
+            // Update the existing assignment if it matches
+            assignedTruck.vehicleNumber = vehicleNumber;
+            assignedTruck.driverEmail = driver.email;
+            await assignedTruck.save();
+        } else {
+            // Create a new assignment if none matches
+            assignedTruck = new AssignedTrucks({
+                vehicleNumber: existingRoute.vehicleNumber,
+                driverEmail: driver.email
+            });
+            await assignedTruck.save();
         }
 
         // Notify the room associated with the vehicle number
         io.to(vehicleNumber).emit('routeUpdated', {
             routeId,
-            vehicleNumber,
-            driverName,
-            fromLocation,
-            toLocation,
-            departureDetails,
+            vehicleNumber: existingRoute.vehicleNumber,
+            driverName: existingRoute.driverName,
+            fromLocation: existingRoute.fromLocation,
+            toLocation: existingRoute.toLocation,
+            departureDetails: existingRoute.departureDetails,
             updatedMessage: updatedMessage || ''
         });
 
         res.status(200).json({ message: 'Route updated successfully', routeId: existingRoute._id });
     } catch (err) {
-        console.error("Error updating route:", err);
+        console.error('Error updating route:', err);
         res.status(400).json({ error: err.message });
     }
 });
