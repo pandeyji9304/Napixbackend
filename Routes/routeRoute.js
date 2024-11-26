@@ -226,15 +226,17 @@ router.get('/routes/:id/messages', async (req, res) => {
 });
 
 router.put('/edit-route/:id', async (req, res) => {
-    console.log("edit route hit");
+    console.log("Edit route hit");
 
     const { vehicleNumber, driverName, fromLocation, toLocation, departureDetails, updatedMessage } = req.body;
     const routeId = req.params.id;
 
     try {
-        // Ensure that the driver exists
+        // Ensure the driver exists
         const driver = await Driver.findOne({ name: driverName });
-        if (!driver) return res.status(404).json({ error: 'Driver not found' });
+        if (!driver) {
+            return res.status(404).json({ error: 'Driver not found' });
+        }
 
         // Only logistics heads can edit routes
         if (req.user.role !== 'logistics_head') {
@@ -266,21 +268,17 @@ router.put('/edit-route/:id', async (req, res) => {
         // Save the updated route
         await existingRoute.save();
 
-        // Check if the assigned vehicle or driver has changed
+        // Update the assigned truck only if it exists
         if (vehicleNumber !== previousVehicleNumber || driver.email !== previousDriverEmail) {
-            // If the vehicle number or driver has changed, update the assignment
-            let assignedTruck = await AssignedTrucks.findOne({ vehicleNumber: previousVehicleNumber, driverEmail: previousDriverEmail });
-            if (assignedTruck) {
-                // Remove the old assignment
-                await assignedTruck.remove();
-            }
+            const updatedTruck = await AssignedTrucks.findOneAndUpdate(
+                { vehicleNumber: previousVehicleNumber, driverEmail: previousDriverEmail },
+                { vehicleNumber, driverEmail: driver.email },
+                { new: true } // Return the updated document
+            );
 
-            // Create a new assignment for the updated vehicle and driver
-            assignedTruck = new AssignedTrucks({
-                vehicleNumber,
-                driverEmail: driver.email
-            });
-            await assignedTruck.save();
+            if (!updatedTruck) {
+                console.log("No assigned truck found to update. Skipping...");
+            }
         }
 
         // Notify the room associated with the vehicle number
@@ -296,9 +294,11 @@ router.put('/edit-route/:id', async (req, res) => {
 
         res.status(200).json({ message: 'Route updated successfully', routeId: existingRoute._id });
     } catch (err) {
+        console.error("Error updating route:", err);
         res.status(400).json({ error: err.message });
     }
 });
+
 
 
 
