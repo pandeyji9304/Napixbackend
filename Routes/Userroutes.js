@@ -3,7 +3,10 @@ const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const Driver = require('../Models/Driver');
-
+const mongoose = require('mongoose');
+const Vehicle = require('../Models/Vehicle');
+const AssignedTrucks = require('../Models/AssignedTrucks');
+const Route = require('../Models/Route')
 const User = require('../Models/User');
 const { hashPassword } = require('../Utils/password');
 const router = express.Router();
@@ -190,6 +193,65 @@ router.post('/signup/logistics-head', [
         res.status(400).json({ error: err.message });
     }
 });
+
+
+router.delete('/delete-user/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    const session = await mongoose.startSession(); // Start a transaction session
+    session.startTransaction();
+
+    try {
+        // Find the user by ID
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Find all vehicles assigned to the user first
+        const vehiclesToDelete = await Vehicle.find({ assignedBy: userId }).session(session);
+
+        // Delete assigned vehicles
+        const deletedVehicles = await Vehicle.deleteMany({ assignedBy: userId }).session(session);
+
+        // Delete associated drivers
+        const deletedDrivers = await Driver.deleteMany({ assignedBy: userId }).session(session);
+
+        // Delete associated routes
+        const deletedRoutes = await Route.deleteMany({ logisticsHead: userId }).session(session);
+
+        // Delete assigned trucks based on the vehicle numbers of the deleted vehicles
+        const deletedAssignedTrucks = await AssignedTrucks.deleteMany({
+            vehicleNumber: { $in: vehiclesToDelete.map(v => v.vehicleNumber) }
+        }).session(session);
+
+        // Finally, delete the user
+        await User.findByIdAndDelete(userId).session(session);
+
+        // Commit the transaction
+        await session.commitTransaction();
+
+        res.status(200).json({
+            message: 'User and all associated data deleted successfully',
+            details: {
+                deletedVehicles: deletedVehicles.deletedCount,
+                deletedDrivers: deletedDrivers.deletedCount,
+                deletedRoutes: deletedRoutes.deletedCount,
+                deletedAssignedTrucks: deletedAssignedTrucks.deletedCount
+            }
+        });
+    } catch (error) {
+        // Rollback the transaction in case of an error
+        await session.abortTransaction();
+        console.error('Error deleting user and associated data:', error);
+        res.status(500).json({ error: 'Failed to delete user and associated data' });
+    } finally {
+        session.endSession(); // End the transaction session
+    }
+});
+
+
+
 
 
 router.put('/edit-user/:id', authenticateLogisticsHead, async (req, res) => {
