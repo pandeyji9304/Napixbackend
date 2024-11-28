@@ -193,42 +193,41 @@ router.post('/signup/logistics-head', [
         res.status(400).json({ error: err.message });
     }
 });
+router.delete('/delete-user', authenticateLogisticsHead, async (req, res) => {
+    const { password } = req.body; // Password provided by the user
+    const userId = req.user.id; // Extract userId from token
 
+    if (!password) {
+        return res.status(400).json({ error: 'Password is required' });
+    }
 
-router.delete('/delete-user/:userId', async (req, res) => {
-    const { userId } = req.params;
-
-    const session = await mongoose.startSession(); // Start a transaction session
+    const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        // Find the user by ID
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).select('+password');
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Find all vehicles assigned to the user first
+        // Verify the password
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid password' });
+        }
+
+        // Delete associated data
         const vehiclesToDelete = await Vehicle.find({ assignedBy: userId }).session(session);
-
-        // Delete assigned vehicles
         const deletedVehicles = await Vehicle.deleteMany({ assignedBy: userId }).session(session);
-
-        // Delete associated drivers
         const deletedDrivers = await Driver.deleteMany({ assignedBy: userId }).session(session);
-
-        // Delete associated routes
         const deletedRoutes = await Route.deleteMany({ logisticsHead: userId }).session(session);
-
-        // Delete assigned trucks based on the vehicle numbers of the deleted vehicles
         const deletedAssignedTrucks = await AssignedTrucks.deleteMany({
             vehicleNumber: { $in: vehiclesToDelete.map(v => v.vehicleNumber) }
         }).session(session);
 
-        // Finally, delete the user
+        // Delete the user
         await User.findByIdAndDelete(userId).session(session);
 
-        // Commit the transaction
         await session.commitTransaction();
 
         res.status(200).json({
@@ -241,16 +240,13 @@ router.delete('/delete-user/:userId', async (req, res) => {
             }
         });
     } catch (error) {
-        // Rollback the transaction in case of an error
         await session.abortTransaction();
         console.error('Error deleting user and associated data:', error);
         res.status(500).json({ error: 'Failed to delete user and associated data' });
     } finally {
-        session.endSession(); // End the transaction session
+        session.endSession();
     }
 });
-
-
 
 
 
