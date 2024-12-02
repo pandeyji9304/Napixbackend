@@ -193,6 +193,8 @@ router.post('/signup/logistics-head', [
         res.status(400).json({ error: err.message });
     }
 });
+
+
 router.delete('/delete-user', authenticateLogisticsHead, async (req, res) => {
     const { password } = req.body; // Password provided by the user
     const userId = req.user.id; // Extract userId from token
@@ -215,6 +217,8 @@ router.delete('/delete-user', authenticateLogisticsHead, async (req, res) => {
         if (!isPasswordValid) {
             return res.status(401).json({ error: 'Invalid password' });
         }
+        const { email, name } = user;
+
 
         // Delete associated data
         const vehiclesToDelete = await Vehicle.find({ assignedBy: userId }).session(session);
@@ -229,6 +233,38 @@ router.delete('/delete-user', authenticateLogisticsHead, async (req, res) => {
         await User.findByIdAndDelete(userId).session(session);
 
         await session.commitTransaction();
+         
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail', // Replace with your email service
+            auth: {
+                user: process.env.EMAIL_USER, // Your email
+                pass: process.env.EMAIL_PASS  // Your email password or app-specific password
+            }
+        });
+
+        const mailOptions = {
+            from: '"Logistics Team" napixofficial@gmail.com', // Replace with your sender email
+            to: email, // User's email
+            subject: 'Account Deletion Notification',
+            text: `Dear ${name},
+
+We regret to inform you that your account and all associated data have been permanently deleted as per your request.
+
+If this action was not initiated by you, please contact our support team immediately.
+
+Best Regards,
+Logistics Team`
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Error sending email:', error);
+                // Optionally, log the email failure without halting the process
+            } else {
+                console.log('Email sent:', info.response);
+            }
+        });
 
         res.status(200).json({
             message: 'User and all associated data deleted successfully',
@@ -247,7 +283,6 @@ router.delete('/delete-user', authenticateLogisticsHead, async (req, res) => {
         session.endSession();
     }
 });
-
 
 
 router.put('/edit-user/:id', authenticateLogisticsHead, async (req, res) => {

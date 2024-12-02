@@ -304,12 +304,49 @@ router.put('/edit-route/:id', async (req, res) => {
             updatedMessage: updatedMessage || ''
         });
 
+        // Send email notification
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: '"Logistics Team" <napixofficial@gmail.com>',
+            to: driver.email, // Send email to the driver's email
+            subject: 'Route Updated Notification',
+            text: `Dear ${driverName},
+
+Your route has been updated with the following details:
+
+- Vehicle Number: ${existingRoute.vehicleNumber}
+- From: ${existingRoute.fromLocation}
+- To: ${existingRoute.toLocation}
+- Departure Details: ${existingRoute.departureDetails}
+
+If you have any questions, please contact the logistics head.
+
+Best Regards,
+Logistics Team`
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Error sending email:', error);
+            } else {
+                console.log('Email sent:', info.response);
+            }
+        });
+
         res.status(200).json({ message: 'Route updated successfully', routeId: existingRoute._id });
     } catch (err) {
         console.error('Error updating route:', err);
         res.status(400).json({ error: err.message });
     }
 });
+
 
 
 
