@@ -6,10 +6,12 @@ const {hashPassword, comparePassword } = require('../Utils/password');
 const jwt = require('jsonwebtoken');
 
 // Login
+
 router.post('/login', async (req, res) => {
   console.log('Signin route hit');
-  const { email, password } = req.body;
-
+  let { email, password } = req.body;
+   email = email.trim();
+   password=password.trim();
   // Basic validation
   if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });

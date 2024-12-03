@@ -8,7 +8,9 @@ const User =  require('../Models/User')
 // Add Vehicle
 router.post('/add', authenticateLogisticsHead, async (req, res) => {
     // console.log('Vehicle route hit');
-    const { vehicleNumber } = req.body;
+    let { vehicleNumber } = req.body;
+    vehicleNumber = vehicleNumber?.replace(/\s+/g, '');
+    console.log(vehicleNumber);
     try {
         const newVehicle = new Vehicle({ vehicleNumber, assignedBy: req.user._id }); // Assign vehicle to the logged-in user
         await newVehicle.save();

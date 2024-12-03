@@ -147,7 +147,10 @@ router.post('/signup/logistics-head', [
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, phoneNumber, password, companyName, profileImageUrl } = req.body;
+    let { name, email, phoneNumber, password, companyName, profileImageUrl } = req.body;
+    email=email.trim();
+    password= password.trim();
+
 
     try {
         // Check for required fields

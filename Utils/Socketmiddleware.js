@@ -31,6 +31,8 @@ const handleConnection = (io) => (socket) => {
             }
 
             // Use vehicleNumber as room key
+            vehicleNumber=vehicleNumber.trim();
+            vehicleNumber = vehicleNumber?.replace(/\s+/g, '');
             const roomName = vehicleNumber;
 
             // Check if driver is assigned to this vehicle
