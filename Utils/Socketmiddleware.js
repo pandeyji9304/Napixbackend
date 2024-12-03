@@ -34,7 +34,7 @@ const handleConnection = (io) => (socket) => {
             vehicleNumber=vehicleNumber.trim();
             vehicleNumber = vehicleNumber?.replace(/\s+/g, '');
             const roomName = vehicleNumber;
-
+     console.log(roomName)
             // Check if driver is assigned to this vehicle
             const assignedTruck = await AssignedTrucks.findOne({ 
                 vehicleNumber, 
